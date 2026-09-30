@@ -307,31 +307,6 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         }
     }
 
-    /**
-     * Remove the old TouchController mod from profiles created by earlier
-     * Auto Setup versions. Its own overlay is separate from the launcher's
-     * TAB-only control layout and would otherwise add buttons and warnings.
-     */
-    private void removeLegacyTouchController(Instance currentInstance) {
-        try {
-            File modsDir = new File(currentInstance.getGameDirectory(), "mods");
-            File[] files = modsDir.listFiles();
-            if (files == null) return;
-
-            for (File file : files) {
-                if (!file.isFile()) continue;
-                String name = file.getName().toLowerCase(java.util.Locale.ROOT);
-                if (name.contains("touchcontroller") || name.contains("touch-controller")) {
-                    if (!file.delete()) {
-                        Log.w("MainActivity", "Could not remove legacy TouchController: " + file);
-                    }
-                }
-            }
-        } catch (Throwable error) {
-            Log.w("MainActivity", "Could not clean legacy TouchController", error);
-        }
-    }
-
     private void initTouchControllerProxy() {
         try {
             top.fifthlight.touchcontroller.proxy.client.MessageTransport transport =
