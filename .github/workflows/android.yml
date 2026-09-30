@@ -27,13 +27,26 @@ jobs:
         shell: bash
         run: |
           set -e
+
           rm -rf glfw sdl mojoexec
+
           git clone --depth 1 --recurse-submodules https://github.com/MojoLauncher/glfw glfw
           git clone --depth 1 --recurse-submodules https://github.com/MojoLauncher/MojoSDL sdl
           git clone --depth 1 --recurse-submodules https://github.com/MojoLauncher/mojoexec mojoexec
+
           test -f glfw/jni_bindings/build.gradle
           test -f sdl/jni_bindings/build.gradle
           test -f mojoexec/jni_bindings/build.gradle
+
+          mkdir -p app_pojavlauncher/src/main/jni
+
+          ln -sfn ../../../../glfw app_pojavlauncher/src/main/jni/glfw
+          ln -sfn ../../../../sdl app_pojavlauncher/src/main/jni/sdl
+          ln -sfn ../../../../mojoexec app_pojavlauncher/src/main/jni/mojoexec
+
+          test -f app_pojavlauncher/src/main/jni/glfw/CMakeLists.txt
+          test -f app_pojavlauncher/src/main/jni/sdl/CMakeLists.txt
+          test -f app_pojavlauncher/src/main/jni/mojoexec/CMakeLists.txt
 
       - name: Get LTW
         uses: dawidd6/action-download-artifact@v6
