@@ -522,6 +522,13 @@
     <string name="preference_button_transparency_summary">Changes on-screen buttons transparency</string>
     <string name="main_please_restart">Please restart the game from the launcher homescreen</string>
     <string name="launcher_tagline">Fast • Lightweight • Bedrock-style touch</string>
+    <string name="auto_setup_title">Auto Setup</string>
+    <string name="auto_setup_choose_version">Choose your Minecraft version</string>
+    <string name="auto_setup_fabric">Fabric • automatic TouchController setup</string>
+    <string name="auto_setup_working">Setting up Minecraft…</string>
+    <string name="auto_setup_success">Setup complete. Fabric and TouchController are ready for %1$s.</string>
+    <string name="auto_setup_failed">Auto Setup failed: %1$s</string>
+    <string name="auto_setup_not_supported">TouchController is not available for this Minecraft version.</string>
     <string name="touch_preset_title">Touch controls</string>
     <string name="touch_preset_dialog_title">Choose Bedrock-style controls</string>
     <string name="touch_preset_dpad">D-Pad + Tap</string>
