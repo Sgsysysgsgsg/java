@@ -251,8 +251,17 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
 
             // Minimal in-game menu. Gameplay controls are intentionally TAB-only.
             String[] inGameMenuItems = {"⚙ Settings", "⌨ Keyboard", "✕ Exit"};
-            gameActionArrayAdapter = new ArrayAdapter<>(this,
-                    android.R.layout.simple_list_item_1, inGameMenuItems);
+            gameActionArrayAdapter = new ArrayAdapter<String>(this,
+                    android.R.layout.simple_list_item_1, inGameMenuItems) {
+                @Override
+                public View getView(int position, View convertView, android.view.ViewGroup parent) {
+                    TextView row = (TextView) super.getView(position, convertView, parent);
+                    row.setTextColor(Color.WHITE);
+                    row.setTextSize(16);
+                    row.setPadding(24, 18, 24, 18);
+                    return row;
+                }
+            };
             gameActionClickListener = (parent, view, position, id) -> {
                 switch(position) {
                     case 0:
