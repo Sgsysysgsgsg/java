@@ -522,4 +522,10 @@
     <string name="preference_button_transparency_summary">Changes on-screen buttons transparency</string>
     <string name="main_please_restart">Please restart the game from the launcher homescreen</string>
     <string name="launcher_tagline">Fast • Lightweight • Bedrock-style touch</string>
+    <string name="touch_preset_title">Touch controls</string>
+    <string name="touch_preset_dialog_title">Choose Bedrock-style controls</string>
+    <string name="touch_preset_dpad">D-Pad + Tap</string>
+    <string name="touch_preset_joystick_aim">Joystick + Aim</string>
+    <string name="touch_preset_joystick_tap">Joystick + Tap</string>
+    <string name="touch_preset_applied">Touch layout applied</string>
 </resources>
