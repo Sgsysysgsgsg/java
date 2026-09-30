@@ -233,6 +233,18 @@ public class GameView extends FrameLayout implements PlatformGrabListener, Surfa
             });
         }
 
+        if(action == KeyEvent.ACTION_DOWN && (eventKeycode == KeyEvent.KEYCODE_E || eventKeycode == KeyEvent.KEYCODE_ESCAPE)) {
+            if(getContext() instanceof GameActivity) {
+                GameActivity activity = (GameActivity) getContext();
+                if(eventKeycode == KeyEvent.KEYCODE_E) {
+                    activity.setInventoryUtilityOpen(true);
+                } else {
+                    // Wait briefly for Minecraft to switch back to the gameplay surface.
+                    postDelayed(activity::updateUtilityControls, 120);
+                }
+            }
+        }
+
         if(action == KeyEvent.ACTION_MULTIPLE) return true;
         // Ignore the cancelled up events. They occur when the user switches layouts.
         // In accordance with https://developer.android.com/reference/android/view/KeyEvent#FLAG_CANCELED
@@ -344,6 +356,14 @@ public class GameView extends FrameLayout implements PlatformGrabListener, Surfa
             mCurrentTouchProcessor.cancelPendingActions();
             mCurrentTouchProcessor = pickEventProcessor(isGrabbing);
             mLastGrabState = isGrabbing;
+            if(getContext() instanceof GameActivity) {
+                GameActivity activity = (GameActivity) getContext();
+                if(isGrabbing) {
+                    activity.setInventoryUtilityOpen(false);
+                } else {
+                    activity.updateUtilityControls();
+                }
+            }
         }
     }
 
