@@ -114,10 +114,14 @@
 	</FrameLayout>
 
 	<ListView
-		android:layout_width="200dp"
+		android:layout_width="280dp"
 		android:layout_height="match_parent"
 		android:layout_gravity="right"
-		android:background="?attr/colorBackgroundFloating"
+		android:background="#15101E"
+		android:divider="#30243D"
+		android:dividerHeight="1dp"
+		android:paddingTop="18dp"
+		android:paddingBottom="18dp"
 		android:fitsSystemWindows="false"
 		android:id="@+id/main_navigation_view"/>
 
