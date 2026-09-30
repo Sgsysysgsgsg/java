@@ -63,7 +63,7 @@
         android:text="@string/preference_enable_gyro_title"
 
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/checkboxGyro"
+        app:layout_constraintTop_toBottomOf="@id/checkboxTouchControls"
         tools:ignore="UseSwitchCompatOrMaterialXml" />
 
     <Switch
