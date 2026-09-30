@@ -118,6 +118,8 @@ public abstract class FabriclikeInstallFragment extends Fragment implements Modl
                 i.name = mFabriclikeUtils.getName();
                 i.icon = mFabriclikeUtils.getIconName();
                 i.versionId = versionId;
+                i.minecraftVersion = mSelectedGameVersion;
+                i.modLoader = mFabriclikeUtils.getName().toLowerCase().contains("quilt") ? "quilt" : "fabric";
             }, versionId);
             getListenerProxy().onDownloadFinished(null);
         }catch (IOException e) {
