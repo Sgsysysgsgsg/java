@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="touch_control_preset_entries">
+        <item>Joystick &amp; Tap — Classic Bedrock</item>
+        <item>D-Pad &amp; Tap — Simple</item>
+        <item>Joystick &amp; Aim — Centered</item>
+    </string-array>
+    <string-array name="touch_control_preset_values">
+        <item>joystick_tap</item>
+        <item>dpad_tap</item>
+        <item>joystick_aim</item>
+    </string-array>
+</resources>
