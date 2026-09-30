@@ -132,6 +132,17 @@ public class LauncherActivity extends BaseActivity {
         }
         String normalizedVersionId = MoJsonExtras.normalizeVersionId(selectedInstance.versionId);
         JVersionList.Version mcVersion = MoJsonExtras.getListedVersion(normalizedVersionId);
+        int requiredJava = mcVersion != null && mcVersion.javaVersion != null
+                ? mcVersion.javaVersion.majorVersion
+                : DeviceCompatibility.inferJavaMajor(normalizedVersionId);
+        DeviceCompatibility.Result compatibility =
+                DeviceCompatibility.check(this, normalizedVersionId, requiredJava);
+
+        if (!compatibility.likelyPlayable) {
+            showCompatibilityWarning(normalizedVersionId, compatibility);
+            return false;
+        }
+
         new MoJsonDownloader().start(
                 this.getAssets(),
                 mcVersion,
@@ -151,6 +162,30 @@ public class LauncherActivity extends BaseActivity {
         }
         return false;
     };
+
+    private void showCompatibilityWarning(String versionId, DeviceCompatibility.Result result) {
+        new AlertDialog.Builder(this)
+                .setTitle("Device compatibility")
+                .setMessage(
+                        "This device is detected as VERY LOW-END for " + versionId + ".\\n\\n"
+                        + DeviceCompatibility.summary(result) + "\\n\\n"
+                        + result.reason + "\\n\\n"
+                        + "For the fastest startup and best FPS, use a lighter Minecraft version."
+                )
+                .setNegativeButton("Choose another version", null)
+                .setPositiveButton("Try anyway", (dialog, which) -> {
+                    JVersionList.Version version = MoJsonExtras.getListedVersion(
+                            MoJsonExtras.normalizeVersionId(versionId));
+                    new MoJsonDownloader().start(
+                            getAssets(),
+                            version,
+                            MoJsonExtras.normalizeVersionId(versionId),
+                            new ContextAwareDoneListener(this, MoJsonExtras.normalizeVersionId(versionId))
+                    );
+                })
+                .show();
+    }
+
     @Override
     protected boolean shouldIgnoreNotch() {
         return getResources().getConfiguration().orientation == ORIENTATION_PORTRAIT;
