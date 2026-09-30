@@ -287,6 +287,12 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
 
     private void loadControls() {
         try {
+            // Repair the legacy broken default.json directory created by older builds.
+            File defaultControls = new File(Tools.CTRLDEF_FILE);
+            if (defaultControls.isDirectory()) {
+                TouchPresetManager.applyPreset(this, "joystick_tap");
+            }
+
             // Load keys
             mControlLayout.loadLayout(instance.getLaunchControls());
         } catch(IOException e) {
