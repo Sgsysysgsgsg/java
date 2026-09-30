@@ -38,42 +38,56 @@ public final class AutoSetupManager {
     private AutoSetupManager() {}
 
     public interface Callback {
+        void onStage(String stage);
         void onSuccess(String version, String loaderVersion, int modCount);
         void onError(Throwable error);
     }
 
-    public static void setup(Context context, String minecraftVersion, Callback callback) {
+    public static void setup(Context context, String minecraftVersion, String profileName, Callback callback) {
         PojavApplication.sExecutorService.execute(() -> {
             try {
                 if (ProgressKeeper.hasOngoingTasks()) {
                     throw new IOException("Another download is already running. Please wait for it to finish.");
                 }
 
+                notifyStage(callback, "Installing Fabric Loader…");
                 String fabricVersion = installFabric(minecraftVersion);
 
+                String safeProfileName = profileName == null ? "" : profileName.trim();
+                if (safeProfileName.isEmpty()) safeProfileName = "EYAD-Touch-" + minecraftVersion;
+
+                final String finalProfileName = safeProfileName;
                 Instance instance = Instances.createInstance(new InstanceSetter() {
                     @Override
                     public void setInstanceProperties(Instance target) {
                         target.sharedData = false;
                         target.versionId = fabricVersion;
                     }
-                }, "EYAD-Touch-" + minecraftVersion);
+                }, finalProfileName);
 
+                // Always use our known-good default Bedrock-style control layout.
+                instance.controlLayout = null;
+                instance.maybeWrite();
                 Instances.setSelectedInstance(instance);
 
-                // Install the complete Minecraft runtime for the selected Fabric version.
+                notifyStage(callback, "Downloading Minecraft files…");
                 downloadGame(context, fabricVersion);
 
-                // Install TouchController, Mod Menu and every required Modrinth dependency.
+                notifyStage(callback, "Checking TouchController and Mod Menu…");
                 int installed = installTouchControllerAndModMenu(instance, minecraftVersion);
 
+                final String installedProfileName = finalProfileName;
                 Tools.runOnUiThread(() -> callback.onSuccess(
-                        minecraftVersion, fabricVersion, installed
+                        installedProfileName, minecraftVersion, fabricVersion, installed
                 ));
             } catch (Throwable error) {
                 Tools.runOnUiThread(() -> callback.onError(error));
             }
         });
+    }
+
+    private static void notifyStage(Callback callback, String stage) {
+        Tools.runOnUiThread(() -> callback.onStage(stage));
     }
 
     private static String installFabric(String minecraftVersion) throws IOException {
@@ -184,6 +198,10 @@ public final class AutoSetupManager {
 
                 if (fixedVersionId != null) {
                     resolved = getVersion(fixedVersionId);
+                    if (!supportsExact(resolved, minecraftVersion, loader)) {
+                        throw new IOException("Dependency " + fixedVersionId
+                                + " is not compatible with Minecraft " + minecraftVersion);
+                    }
                 } else if (projectId != null) {
                     resolved = getBestProjectVersion(projectId, minecraftVersion, loader);
                 }
@@ -251,11 +269,39 @@ public final class AutoSetupManager {
         JsonObject fallback = null;
         for (int i = 0; i < versions.size(); i++) {
             JsonObject version = versions.get(i).getAsJsonObject();
+            if (!supportsExact(version, minecraftVersion, loader)) continue;
             if (fallback == null) fallback = version;
             String type = getNullableString(version, "version_type");
             if ("release".equals(type)) return version;
         }
         return fallback;
+    }
+
+    private static boolean supportsExact(JsonObject version, String minecraftVersion, String loader) {
+        if (version == null) return false;
+
+        JsonArray gameVersions = version.getAsJsonArray("game_versions");
+        boolean gameMatch = false;
+        if (gameVersions != null) {
+            for (int i = 0; i < gameVersions.size(); i++) {
+                if (minecraftVersion.equals(gameVersions.get(i).getAsString())) {
+                    gameMatch = true;
+                    break;
+                }
+            }
+        }
+
+        JsonArray loaders = version.getAsJsonArray("loaders");
+        boolean loaderMatch = false;
+        if (loaders != null) {
+            for (int i = 0; i < loaders.size(); i++) {
+                if (loader.equalsIgnoreCase(loaders.get(i).getAsString())) {
+                    loaderMatch = true;
+                    break;
+                }
+            }
+        }
+        return gameMatch && loaderMatch;
     }
 
     private static String getNullableString(JsonObject object, String key) {
