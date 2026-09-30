@@ -32,8 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public final class AutoSetupManager {
-    private static final String TOUCH_CONTROLLER_PROJECT = "touchcontroller";
-    private static final String MOD_MENU_PROJECT = "modmenu";
+        private static final String MOD_MENU_PROJECT = "modmenu";
 
     private AutoSetupManager() {}
 
@@ -76,8 +75,8 @@ public final class AutoSetupManager {
                 notifyStage(callback, "Downloading Minecraft files…");
                 downloadGame(context, fabricVersion);
 
-                notifyStage(callback, "Checking TouchController and Mod Menu…");
-                int installed = installTouchControllerAndModMenu(instance, minecraftVersion);
+                notifyStage(callback, "Installing Mod Menu…");
+                int installed = installModMenu(instance, minecraftVersion);
 
                 final String installedProfileName = finalProfileName;
                 Tools.runOnUiThread(() -> callback.onSuccess(
@@ -145,23 +144,12 @@ public final class AutoSetupManager {
         }
     }
 
-    private static int installTouchControllerAndModMenu(Instance instance, String minecraftVersion)
+    private static int installModMenu(Instance instance, String minecraftVersion)
             throws IOException, InterruptedException {
         File modsDir = new File(instance.getGameDirectory(), "mods");
         FileUtils.ensureDirectory(modsDir);
 
         List<JsonObject> roots = new ArrayList<>();
-
-        JsonObject controller = getBestProjectVersion(
-                TOUCH_CONTROLLER_PROJECT, minecraftVersion, "fabric");
-        if (controller == null) {
-            throw new IOException("TouchController does not support Minecraft " + minecraftVersion
-                    + " on Fabric.");
-        }
-        roots.add(controller);
-
-        // Mod Menu is intentionally installed too, so supported mods can be configured
-        // from inside Minecraft. It is unavailable for some very old versions.
         JsonObject modMenu = getBestProjectVersion(MOD_MENU_PROJECT, minecraftVersion, "fabric");
         if (modMenu != null) roots.add(modMenu);
 
