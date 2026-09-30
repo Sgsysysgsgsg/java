@@ -523,6 +523,7 @@
     <string name="main_please_restart">Please restart the game from the launcher homescreen</string>
     <string name="launcher_tagline">Fast • Lightweight • Bedrock-style touch</string>
     <string name="auto_setup_title">Auto Setup</string>
+    <string name="mods_title">Mods</string>
     <string name="auto_setup_choose_version">Choose your Minecraft version</string>
     <string name="auto_setup_fabric">Fabric • automatic TouchController setup</string>
     <string name="auto_setup_working">Setting up Minecraft…</string>
