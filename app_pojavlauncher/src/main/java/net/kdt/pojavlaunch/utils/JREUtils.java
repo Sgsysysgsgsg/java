@@ -89,6 +89,11 @@ public class JREUtils {
 
         setupFfmpegEnv(context, envMap);
 
+        // TouchController uses this abstract Unix-domain socket to connect the
+        // Minecraft mod to the launcher-side proxy client.
+        envMap.put("TOUCH_CONTROLLER_PROXY_SOCKET",
+                net.kdt.pojavlaunch.game.GameActivity.TOUCH_CONTROLLER_SOCKET_NAME);
+
         if(LauncherPreferences.PREF_BIG_CORE_AFFINITY) envMap.put("POJAV_BIG_CORE_AFFINITY", "1");
         if(LauncherPreferences.PREF_ALSOFT_FORCE_OPENSL) envMap.put("ALSOFT_DRIVERS", "opensl");
 
