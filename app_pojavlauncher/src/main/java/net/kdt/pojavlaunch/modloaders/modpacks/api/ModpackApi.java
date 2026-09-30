@@ -56,8 +56,14 @@ public interface ModpackApi {
         PojavApplication.sExecutorService.execute(() -> {
             try {
                 installModpack(modDetail, selectedVersion);
-            }catch (IOException e) {
+            }catch (Throwable e) {
                 Tools.showErrorRemote(context, R.string.modpack_install_download_failed, e);
+            } finally {
+                // Some mod download paths finish without explicitly closing the
+                // INSTALL_MODPACK progress record. Never leave the UI stuck loading.
+                com.kdt.mcgui.ProgressLayout.clearProgress(
+                        com.kdt.mcgui.ProgressLayout.INSTALL_MODPACK
+                );
             }
         });
     }
