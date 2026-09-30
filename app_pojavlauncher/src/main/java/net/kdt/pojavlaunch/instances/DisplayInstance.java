@@ -6,6 +6,10 @@ public class DisplayInstance {
     protected transient File mInstanceRoot;
     public String name;
     public String versionId;
+    /** Exact Minecraft version used by this instance. */
+    public String minecraftVersion;
+    /** Instance mod loader: fabric, quilt, forge or neoforge. */
+    public String modLoader;
     public String icon;
 
     protected void sanitize() {
