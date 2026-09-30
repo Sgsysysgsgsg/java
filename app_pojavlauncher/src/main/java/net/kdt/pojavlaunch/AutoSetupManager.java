@@ -65,6 +65,8 @@ public final class AutoSetupManager {
                     public void setInstanceProperties(Instance target) {
                         target.sharedData = false;
                         target.versionId = fabricVersion;
+                        target.minecraftVersion = minecraftVersion;
+                        target.modLoader = "fabric";
                     }
                 }, finalProfileName);
 
