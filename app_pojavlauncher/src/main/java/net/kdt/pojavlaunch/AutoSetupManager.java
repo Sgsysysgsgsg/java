@@ -78,7 +78,7 @@ public final class AutoSetupManager {
 
                 final String installedProfileName = finalProfileName;
                 Tools.runOnUiThread(() -> callback.onSuccess(
-                        installedProfileName, minecraftVersion, fabricVersion, installed
+                        installedProfileName, minecraftVersion, installed
                 ));
             } catch (Throwable error) {
                 Tools.runOnUiThread(() -> callback.onError(error));
