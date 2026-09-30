@@ -289,7 +289,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         try {
             // Repair the legacy broken default.json directory created by older builds.
             File defaultControls = new File(Tools.CTRLDEF_FILE);
-            if (defaultControls.isDirectory()) {
+            if (defaultControls.isDirectory() || !defaultControls.exists()) {
                 TouchPresetManager.applyPreset(this, "joystick_tap");
             }
 
