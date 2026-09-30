@@ -32,11 +32,11 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
 
     private SharedPreferences.Editor mEditor;
     @SuppressLint("UseSwitchCompatOrMaterialCode")
-    private Switch mGyroSwitch, mGyroXSwitch, mGyroYSwitch, mGestureSwitch;
+    private Switch mGyroSwitch, mGyroXSwitch, mGyroYSwitch, mGestureSwitch, mTouchControlsSwitch;
     private CustomSeekbar mGyroSensitivityBar, mMouseSpeedBar, mGestureDelayBar, mResolutionBar, mTransparencyBar;
     private TextView mGyroSensitivityText, mGyroSensitivityDisplayText, mMouseSpeedText, mGestureDelayText, mGestureDelayDisplayText, mResolutionText, mTransparencyText;
 
-    private boolean mOriginalGyroEnabled, mOriginalGyroXEnabled, mOriginalGyroYEnabled, mOriginalGestureDisabled;
+    private boolean mOriginalGyroEnabled, mOriginalGyroXEnabled, mOriginalGyroYEnabled, mOriginalGestureDisabled, mOriginalTouchControlsEnabled;
     private float mOriginalGyroSensitivity, mOriginalMouseSpeed, mOriginalResolution;
     private int mOriginalGestureDelay;
     private short mOriginalTransparency;
@@ -67,6 +67,7 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
         mGyroXSwitch = mDialogContent.findViewById(R.id.checkboxGyroX);
         mGyroYSwitch = mDialogContent.findViewById(R.id.checkboxGyroY);
         mGestureSwitch = mDialogContent.findViewById(R.id.checkboxGesture);
+        mTouchControlsSwitch = mDialogContent.findViewById(R.id.checkboxTouchControls);
 
         mGyroSensitivityBar = mDialogContent.findViewById(R.id.editGyro_seekbar);
         mMouseSpeedBar = mDialogContent.findViewById(R.id.editMouseSpeed_seekbar);
@@ -90,6 +91,7 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
         mOriginalGyroXEnabled = PREF_GYRO_INVERT_X;
         mOriginalGyroYEnabled = PREF_GYRO_INVERT_Y;
         mOriginalGestureDisabled = PREF_DISABLE_GESTURES;
+        mOriginalTouchControlsEnabled = LauncherPreferences.DEFAULT_PREF.getBoolean("touchControlsEnabled", false);
 
         mOriginalGyroSensitivity = PREF_GYRO_SENSITIVITY;
         mOriginalMouseSpeed = PREF_MOUSESPEED;
@@ -101,6 +103,7 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
         mGyroXSwitch.setChecked(mOriginalGyroXEnabled);
         mGyroYSwitch.setChecked(mOriginalGyroYEnabled);
         mGestureSwitch.setChecked(mOriginalGestureDisabled);
+        mTouchControlsSwitch.setChecked(mOriginalTouchControlsEnabled);
 
         mGyroSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             PREF_ENABLE_GYRO = isChecked;
@@ -119,6 +122,11 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
             PREF_GYRO_INVERT_Y = isChecked;
             onGyroStateChanged();
             mEditor.putBoolean("gyroInvertY", isChecked);
+        });
+
+        mTouchControlsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            mEditor.putBoolean("touchControlsEnabled", isChecked);
+            onControlVisibilityChanged(isChecked);
         });
 
         mGestureSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -240,6 +248,8 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
             PREF_GYRO_INVERT_X = mOriginalGyroXEnabled;
             PREF_GYRO_INVERT_Y = mOriginalGyroYEnabled;
             PREF_DISABLE_GESTURES = mOriginalGestureDisabled;
+            LauncherPreferences.DEFAULT_PREF.edit().putBoolean("touchControlsEnabled", mOriginalTouchControlsEnabled).apply();
+            onControlVisibilityChanged(mOriginalTouchControlsEnabled);
 
             PREF_GYRO_SENSITIVITY = mOriginalGyroSensitivity;
             PREF_MOUSESPEED = mOriginalMouseSpeed;
@@ -269,5 +279,8 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
      * Called when the button transparency state is changed. Use {@link LauncherPreferences#PREF_BUTTON_TRANSPARENCY}
      */
     public abstract void onButtonTransparencyChanged();
+
+    /** Called when the user enables or disables the on-screen touch controls. */
+    public abstract void onControlVisibilityChanged(boolean enabled);
 
 }
