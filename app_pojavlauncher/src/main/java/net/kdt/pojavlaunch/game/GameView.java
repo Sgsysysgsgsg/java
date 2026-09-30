@@ -351,8 +351,6 @@ public class GameView extends FrameLayout implements PlatformGrabListener, Surfa
         MCOptionUtils.set("entityShadows", "false");
         MCOptionUtils.set("biomeBlendRadius", biomeBlend);
         MCOptionUtils.set("mipmapLevels", "2");
-        MCOptionUtils.set("ao", "false");
-        MCOptionUtils.set("prioritizeChunkUpdates", "0");
 
         Log.i("EYADPerformance", "Applied lightweight Minecraft profile: weak="
                 + weakDevice + ", RAM=" + ramMb + "MB, cores=" + cores
