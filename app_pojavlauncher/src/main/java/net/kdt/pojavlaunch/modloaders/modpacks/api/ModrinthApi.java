@@ -153,9 +153,16 @@ public class ModrinthApi implements ModpackApi{
 
         ArrayList<TaskMetadata> tasks = new ArrayList<>(1);
         tasks.add(new TaskMetadata(new File(modsDir, fileName), url, Math.max(size, 0), modDetail.versionHashes[selectedVersion], DownloadMirror.DOWNLOAD_CLASS_NONE));
-        new Downloader(ProgressLayout.INSTALL_MODPACK) {
-            public void download() throws IOException, InterruptedException { runDownloads(tasks); }
-        }.download();
+        try {
+            new Downloader(ProgressLayout.INSTALL_MODPACK) {
+                public void download() throws IOException, InterruptedException {
+                    runDownloads(tasks);
+                }
+            }.download();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Mod download interrupted", e);
+        }
     }
 
     public LoaderInstaller installLocalModpack(String modpackName, File modpackFile, String icon) throws IOException {

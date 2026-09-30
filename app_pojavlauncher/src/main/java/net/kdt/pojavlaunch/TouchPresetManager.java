@@ -1,7 +1,6 @@
 package net.kdt.pojavlaunch;
 
 import android.content.Context;
-import android.view.KeyEvent;
 
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 
@@ -19,7 +18,12 @@ public final class TouchPresetManager {
             case "joystick_tap":
             default: asset = "bedrock_joystick_tap.json"; break;
         }
-        Tools.copyAssetFile(context, asset, new File(Tools.CTRLMAP_PATH, "default.json"), true);
+        Tools.copyAssetFile(
+                context,
+                asset,
+                new File(Tools.CTRLMAP_PATH, "default.json").getAbsolutePath(),
+                true
+        );
         LauncherPreferences.DEFAULT_PREF.edit()
                 .putString("defaultCtrl", Tools.CTRLDEF_FILE)
                 .putString("touch_control_preset", preset)
