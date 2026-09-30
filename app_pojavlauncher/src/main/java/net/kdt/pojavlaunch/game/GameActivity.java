@@ -246,7 +246,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
 
             setIntent(activityIntent);
 
-            setTitle("MojoLauncher (" + version + ")");
+            setTitle(getString(R.string.app_short_name) + " (" + version + ")");
 
             // Menu
             gameActionArrayAdapter = new ArrayAdapter<>(this,
