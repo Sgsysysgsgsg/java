@@ -13,6 +13,7 @@ import net.kdt.pojavlaunch.mirrors.DownloadMirror;
 import net.kdt.pojavlaunch.modloaders.FabricVersion;
 import net.kdt.pojavlaunch.modloaders.FabriclikeUtils;
 import net.kdt.pojavlaunch.modloaders.modpacks.api.ApiHandler;
+import net.kdt.pojavlaunch.utils.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
