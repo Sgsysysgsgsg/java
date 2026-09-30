@@ -75,6 +75,8 @@ import net.kdt.pojavlaunch.utils.JREUtils;
 import net.kdt.pojavlaunch.utils.MCOptionUtils;
 import net.kdt.pojavlaunch.authenticator.accounts.Account;
 import net.kdt.pojavlaunch.utils.jre.GameRunner;
+import top.fifthlight.touchcontroller.proxy.client.LauncherProxyClient;
+import top.fifthlight.touchcontroller.proxy.client.android.transport.UnixSocketTransport;
 
 import java.io.File;
 import java.io.IOException;
@@ -110,6 +112,8 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     private GameService.LocalBinder mServiceBinder;
 
     private QuickSettingSideDialog mQuickSettingSideDialog;
+    private LauncherProxyClient mTouchControllerProxy;
+    public static final String TOUCH_CONTROLLER_SOCKET_NAME = "EYADLauncherTouchController";
     public static int mForcedPanningHeight = 0;
     public static int mImeHeight = 0;
 
@@ -118,9 +122,6 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         super.onCreate(savedInstanceState);
         instance = Instances.loadSelectedInstance();
         account = Accounts.getCurrent();
-        if (instance != null) {
-            removeLegacyTouchController(instance);
-        }
         if(instance == null) {
             Toast.makeText(this, R.string.instance_dir_missing, Toast.LENGTH_LONG).show();
             finish();
@@ -139,6 +140,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         // Start the service a bit early
         ContextCompat.startForegroundService(this, gameServiceIntent);
         initLayout(R.layout.activity_basemain);
+        initTouchControllerProxy();
 
         Platform.initialize(this, launcherGLView);
 
@@ -328,18 +330,23 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         }
     }
 
-    private void loadControls() {
+    private void initTouchControllerProxy() {
         try {
-            // Always use the minimal TAB-only layout. This prevents legacy profiles
-            // from restoring joystick/mouse/attack buttons and their old popups.
-            net.kdt.pojavlaunch.TouchPresetManager.applyPreset(this, "tab_only");
-            mControlLayout.loadLayout(Tools.CTRLDEF_FILE);
-            mControlLayout.setControlVisible(true);
-        } catch (Throwable th) {
-            Tools.showError(this, th);
+            top.fifthlight.touchcontroller.proxy.client.MessageTransport transport =
+                    UnixSocketTransport(TOUCH_CONTROLLER_SOCKET_NAME);
+            mTouchControllerProxy = new LauncherProxyClient(transport);
+            mTouchControllerProxy.run();
+            Log.i("TouchControllerBridge", "TouchController proxy started: "
+                    + TOUCH_CONTROLLER_SOCKET_NAME);
+        } catch (Throwable error) {
+            Log.e("TouchControllerBridge", "Failed to start TouchController proxy", error);
         }
+    }
 
-        // Settings are opened through the DrawerLayout edge swipe.
+    private void loadControls() {
+        // TouchController owns the gameplay touch UI. The legacy launcher control
+        // layer stays hidden so it cannot overlap TouchController's Bedrock layout.
+        mControlLayout.setControlVisible(false);
         mDrawerPullButton.setVisibility(View.GONE);
     }
 
@@ -402,6 +409,15 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
 
     @Override
     protected void onDestroy() {
+        if (mTouchControllerProxy != null) {
+            try {
+                mTouchControllerProxy.clearPointer();
+                mTouchControllerProxy.close();
+            } catch (Throwable error) {
+                Log.w("TouchControllerBridge", "Failed to close TouchController proxy", error);
+            }
+            mTouchControllerProxy = null;
+        }
         super.onDestroy();
         ContextExecutor.clearActivity();
     }
