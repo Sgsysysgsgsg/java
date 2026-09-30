@@ -66,10 +66,32 @@ public class MainMenuFragment extends Fragment {
     }
 
     private void openAutoSetup(Context context) {
-        JVersionList versions = (JVersionList) net.kdt.pojavlaunch.extra.ExtraCore.getValue(
-                ExtraConstants.RELEASE_TABLE
-        );
+        final String[] typeValues = {"release", "snapshot", "old_beta", "old_alpha"};
+        final int[] typeLabels = {
+                R.string.mcl_setting_veroption_release,
+                R.string.mcl_setting_veroption_snapshot,
+                R.string.mcl_setting_veroption_oldbeta,
+                R.string.mcl_setting_veroption_oldalpha
+        };
 
+        String[] labels = new String[typeLabels.length];
+        for (int i = 0; i < typeLabels.length; i++) {
+            labels[i] = getString(typeLabels[i]);
+        }
+
+        new AlertDialog.Builder(context)
+                .setTitle(R.string.auto_setup_title)
+                .setItems(labels, (dialog, which) -> {
+                    if (which >= 0 && which < typeValues.length) {
+                        openAutoSetupVersions(context, typeValues[which]);
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void openAutoSetupVersions(Context context, String type) {
+        JVersionList versions = (JVersionList) ExtraCore.getValue(ExtraConstants.RELEASE_TABLE);
         if (versions == null || versions.versions == null || versions.versions.length == 0) {
             Toast.makeText(context, R.string.error_no_version, Toast.LENGTH_LONG).show();
             return;
@@ -77,22 +99,34 @@ public class MainMenuFragment extends Fragment {
 
         ArrayList<String> ids = new ArrayList<>();
         ArrayList<String> labels = new ArrayList<>();
-        int limit = Math.min(80, versions.versions.length);
 
-        for (int i = 0; i < limit; i++) {
-            JVersionList.Version version = versions.versions[i];
-            if (version == null || version.id == null) continue;
+        for (JVersionList.Version version : versions.versions) {
+            if (version == null || version.id == null || !type.equals(version.type)) continue;
+
             ids.add(version.id);
-            String type = version.type == null ? "Minecraft" : version.type;
-            labels.add(version.id + " • " + type);
+
+            String javaText = "";
+            if (version.javaVersion != null && version.javaVersion.majorVersion > 0) {
+                javaText = " • Java " + version.javaVersion.majorVersion;
+            }
+            labels.add(version.id + javaText);
         }
 
-        String[] labelArray = labels.toArray(new String[0]);
+        if (ids.isEmpty()) {
+            Toast.makeText(
+                    context,
+                    "No " + type + " versions are available.",
+                    Toast.LENGTH_LONG
+            ).show();
+            return;
+        }
+
         new AlertDialog.Builder(context)
                 .setTitle(R.string.auto_setup_choose_version)
-                .setItems(labelArray, (dialog, which) -> {
-                    if (which < 0 || which >= ids.size()) return;
-                    startAutoSetup(context, ids.get(which));
+                .setItems(labels.toArray(new String[0]), (dialog, which) -> {
+                    if (which >= 0 && which < ids.size()) {
+                        startAutoSetup(context, ids.get(which));
+                    }
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
