@@ -227,7 +227,7 @@ public class GameView extends FrameLayout implements PlatformGrabListener, Surfa
             Tools.runOnUiThread(() -> {
                 postDelayed(() -> {
                     if(GameActivity.touchCharInput != null && !GameActivity.touchCharInput.hasFocus()) {
-                        GameActivity.toggleKeyboardState(false, 0);
+                        GameActivity.toggleKeyboardState(true, 0);
                     }
                 }, 120);
             });
@@ -323,6 +323,42 @@ public class GameView extends FrameLayout implements PlatformGrabListener, Surfa
         mSurfaceProvider.updateSize();
     }
 
+    /**
+     * Apply a conservative Minecraft profile before launch. The goal is to avoid
+     * wasting battery/heat on frames the phone cannot sustain, while keeping
+     * stronger devices at a comfortable 60 FPS.
+     */
+    private void applyLightweightGameOptions() {
+        int ramMb = Tools.getTotalDeviceMemory(getContext());
+        int cores = Runtime.getRuntime().availableProcessors();
+        boolean weakDevice = ramMb <= 4096 || cores <= 6;
+
+        int renderDistance = weakDevice ? 6 : 8;
+        int simulationDistance = weakDevice ? 5 : 6;
+        int maxFps = weakDevice ? 45 : 60;
+        String particles = weakDevice ? "2" : "1";
+        String entityDistance = weakDevice ? "0.5" : "0.75";
+        String biomeBlend = weakDevice ? "0" : "1";
+
+        MCOptionUtils.set("graphicsMode", "0");
+        MCOptionUtils.set("renderDistance", String.valueOf(renderDistance));
+        MCOptionUtils.set("simulationDistance", String.valueOf(simulationDistance));
+        MCOptionUtils.set("maxFps", String.valueOf(maxFps));
+        MCOptionUtils.set("enableVsync", "false");
+        MCOptionUtils.set("renderClouds", "false");
+        MCOptionUtils.set("particles", particles);
+        MCOptionUtils.set("entityDistanceScaling", entityDistance);
+        MCOptionUtils.set("entityShadows", "false");
+        MCOptionUtils.set("biomeBlendRadius", biomeBlend);
+        MCOptionUtils.set("mipmapLevels", "2");
+        MCOptionUtils.set("ao", "false");
+        MCOptionUtils.set("prioritizeChunkUpdates", "0");
+
+        Log.i("EYADPerformance", "Applied lightweight Minecraft profile: weak="
+                + weakDevice + ", RAM=" + ramMb + "MB, cores=" + cores
+                + ", renderDistance=" + renderDistance + ", maxFps=" + maxFps);
+    }
+
     private void realStart(){
         // Initial size set. Request immedate refresh, otherwise the initial width and height for the game
         // may be broken/unknown.
@@ -332,6 +368,7 @@ public class GameView extends FrameLayout implements PlatformGrabListener, Surfa
         MCOptionUtils.set("fullscreen", "off");
         MCOptionUtils.set("overrideWidth", String.valueOf(windowWidth));
         MCOptionUtils.set("overrideHeight", String.valueOf(windowHeight));
+        applyLightweightGameOptions();
         MCOptionUtils.save();
         getMcScale();
 
