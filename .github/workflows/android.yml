@@ -70,45 +70,35 @@ jobs:
         run: |
           set -euxo pipefail
 
-          python3 <<'PY'
-          from pathlib import Path
+          cat > mojoexec/affinity.c <<'EOF'
+          #include <jni.h>
 
-          path = Path("mojoexec/affinity.c")
+          /*
+           * Android NDK compatibility stub.
+           *
+           * Big-core CPU affinity is optional. The upstream implementation
+           * uses Linux cpu_set_t / CPU_SET_S / sched_setaffinity APIs that
+           * are not available with the Android NDK used by this build.
+           * Keep the expected exported symbols as safe no-ops.
+           */
 
-          android_stub = r'''#include <jni.h>
+          void mojoexec_make_bigcore_affine(void) {
+          }
 
-/*
- * Android NDK compatibility stub.
- *
- * MojoExec CPU big-core affinity is optional. Android NDK 29 does not
- * provide the Linux cpu_set_t / CPU_SET_S / sched_setaffinity API expected
- * by the original desktop implementation, so keep the exported symbols
- * but make the feature a safe no-op on Android.
- */
+          JNIEXPORT void JNICALL
+          Java_git_artdeell_mojoexec_MojoExec_setUseBigCoreAffinity(
+                  JNIEnv *env,
+                  jclass clazz,
+                  jboolean enable) {
+              (void) env;
+              (void) clazz;
+              (void) enable;
+          }
 
-void mojoexec_make_bigcore_affine(void) {
-}
-
-JNIEXPORT void JNICALL
-Java_git_artdeell_mojoexec_MojoExec_setUseBigCoreAffinity(
-        JNIEnv *env,
-        jclass clazz,
-        jboolean enable) {
-    (void) env;
-    (void) clazz;
-    (void) enable;
-}
-
-/* Compatibility symbol for forks that still reference the old name. */
-void make_big_core_affine(void) {
-}
-'''
-
-          path.write_text(android_stub, encoding="utf-8")
-          print("Patched:", path)
-          print(path.read_text(encoding="utf-8"))
-
-          PY
+          /* Compatibility symbol for older forks. */
+          void make_big_core_affine(void) {
+          }
+          EOF
 
           test -s mojoexec/affinity.c
 
