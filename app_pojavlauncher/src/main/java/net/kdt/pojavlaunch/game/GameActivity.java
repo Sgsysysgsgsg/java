@@ -51,6 +51,7 @@ import net.kdt.pojavlaunch.utils.GpuUtils;
 import net.kdt.pojavlaunch.utils.KeycodeUtils;
 import net.kdt.pojavlaunch.Logger;
 import net.kdt.pojavlaunch.Tools;
+import net.kdt.pojavlaunch.TouchPresetManager;
 import net.kdt.pojavlaunch.authenticator.accounts.Accounts;
 import net.kdt.pojavlaunch.customcontrols.ControlButtonMenuListener;
 import net.kdt.pojavlaunch.customcontrols.ControlData;
@@ -325,9 +326,18 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     }
 
     private void loadControls() {
-        // TouchController owns the gameplay touch UI. The legacy launcher control
-        // layer stays hidden so it cannot overlap TouchController's Bedrock layout.
-        mControlLayout.setControlVisible(false);
+        // TouchController owns movement/aim/attack. Keep a tiny launcher overlay only
+        // for essential utility keys that TouchController does not expose reliably:
+        // TAB, F5, Android keyboard, inventory (E), and a menu BACK/ESC key.
+        try {
+            TouchPresetManager.applyPreset(this, "utility");
+            mControlLayout.loadLayout(LauncherPreferences.PREF_DEFAULTCTRL_PATH);
+            mControlLayout.setControlVisible(true);
+        } catch (Exception error) {
+            Log.e("TouchControls", "Failed to load utility controls", error);
+            mControlLayout.setControlVisible(false);
+        }
+        // TouchController handles the gameplay menu surface.
         mDrawerPullButton.setVisibility(View.GONE);
     }
 
