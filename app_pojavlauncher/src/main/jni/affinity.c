@@ -4,8 +4,6 @@
 // Created by maks on 19.06.2023.
 //
 
-#define _GNU_SOURCE // we are GNU GPLv3
-
 #include <linux/limits.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -14,6 +12,14 @@
 #include <stdlib.h>
 #include <sched.h>
 #include <string.h>
+
+#ifdef __ANDROID__
+
+void make_big_core_affine() {
+    // CPU affinity is unavailable with Android NDK 29.
+}
+
+#else
 
 static _Thread_local bool big_core_affine = false;
 
@@ -67,3 +73,4 @@ void make_big_core_affine() {
         big_core_affine = true;
     }
 }
+#endif
