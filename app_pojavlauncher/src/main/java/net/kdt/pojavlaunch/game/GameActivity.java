@@ -110,6 +110,9 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     private GameService.LocalBinder mServiceBinder;
 
     private QuickSettingSideDialog mQuickSettingSideDialog;
+    private float mSwipeStartX;
+    private float mSwipeStartY;
+    private boolean mSwipeTracking;
 
     public static int mForcedPanningHeight = 0;
     public static int mImeHeight = 0;
@@ -226,7 +229,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         mControlLayout.setMenuListener(this);
 
         mDrawerPullButton.setOnClickListener(v -> onClickedMenu());
-        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
         launcherGLView.mCursorView.setCursorScale(LauncherPreferences.PREF_MOUSESCALE);
         weakCursor = new WeakReference<>(launcherGLView.mCursorView);
 
@@ -302,8 +305,9 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         } catch (Throwable th) {
             Tools.showError(this, th);
         }
-        mDrawerPullButton.setVisibility(mControlLayout.hasMenuButton() ? View.GONE : View.VISIBLE);
-        mControlLayout.toggleControlVisible();
+        mDrawerPullButton.setVisibility(View.VISIBLE);
+        boolean controlsEnabled = LauncherPreferences.DEFAULT_PREF.getBoolean("touchControlsEnabled", false);
+        mControlLayout.setControlVisible(controlsEnabled);
     }
 
     @Override
@@ -466,9 +470,36 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
                 public void onButtonTransparencyChanged() {
                     mControlLayout.updateButtonOpacity();
                 }
+
+                @Override
+                public void onControlVisibilityChanged(boolean enabled) {
+                    mControlLayout.setControlVisible(enabled);
+                    LauncherPreferences.DEFAULT_PREF.edit().putBoolean("touchControlsEnabled", enabled).apply();
+                }
             };
         }
         mQuickSettingSideDialog.appear(true);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+            mSwipeStartX = event.getRawX();
+            mSwipeStartY = event.getRawY();
+            mSwipeTracking = Math.abs(mSwipeStartY) < getResources().getDisplayMetrics().height * 0.92f;
+        } else if (event.getActionMasked() == MotionEvent.ACTION_UP && mSwipeTracking
+                && (mControlLayout == null || !mControlLayout.getModifiable())) {
+            float dx = event.getRawX() - mSwipeStartX;
+            float dy = event.getRawY() - mSwipeStartY;
+            if (Math.abs(dx) > 140f && Math.abs(dx) > Math.abs(dy) * 1.5f) {
+                if (drawerLayout.isDrawerOpen(navDrawer)) drawerLayout.closeDrawer(navDrawer);
+                else drawerLayout.openDrawer(navDrawer);
+                mSwipeTracking = false;
+                return true;
+            }
+            mSwipeTracking = false;
+        }
+        return super.dispatchTouchEvent(event);
     }
 
     public static void toggleMouse(Context ctx) {
@@ -506,9 +537,13 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
             return;
         }
 
-        // Android back should behave like Minecraft's ESC key instead of
-        // forcing the user to kill the launcher process.
-        CallbackBridge.sendKeyPress(KeyEvent.KEYCODE_ESCAPE);
+        // First back opens Minecraft's pause/menu via ESC. If the game is already
+        // in a non-grabbing/menu state, back exits the game normally.
+        if (!Platform.isGrabbing()) {
+            dialogForceClose(this);
+        } else {
+            CallbackBridge.sendKeyPress(KeyEvent.KEYCODE_ESCAPE);
+        }
     }
 
     @Override
@@ -524,7 +559,8 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         if(!(handleEvent = launcherGLView.processKeyEvent(event))) {
             if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && !touchCharInput.isEnabled()) {
                 if(event.getAction() != KeyEvent.ACTION_UP) return true; // We eat it anyway
-                CallbackBridge.sendKeyPress(KeyEvent.KEYCODE_ESCAPE);
+                if (!Platform.isGrabbing()) dialogForceClose(this);
+                else CallbackBridge.sendKeyPress(KeyEvent.KEYCODE_ESCAPE);
                 return true;
             }
         }
