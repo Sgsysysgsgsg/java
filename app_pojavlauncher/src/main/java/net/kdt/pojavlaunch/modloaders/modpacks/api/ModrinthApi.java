@@ -2,6 +2,7 @@ package net.kdt.pojavlaunch.modloaders.modpacks.api;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
 import com.kdt.mcgui.ProgressLayout;
 
 import git.artdeell.mojo.R;
@@ -14,6 +15,7 @@ import net.kdt.pojavlaunch.modloaders.ForgelikeUtils;
 import net.kdt.pojavlaunch.modloaders.Lwjgl3ifyUtils;
 import net.kdt.pojavlaunch.instances.Instance;
 import net.kdt.pojavlaunch.instances.Instances;
+import net.kdt.pojavlaunch.modloaders.modpacks.InstanceModCompatibility;
 import net.kdt.pojavlaunch.modloaders.modpacks.api.modloader.FabriclikeLoaderInstaller;
 import net.kdt.pojavlaunch.modloaders.modpacks.api.modloader.ForgelikeLoaderInstaller;
 import net.kdt.pojavlaunch.modloaders.modpacks.api.modloader.LoaderInstaller;
@@ -62,6 +64,8 @@ public class ModrinthApi implements ModpackApi{
         facetString.append(String.format("[\"project_type:%s\"]", searchFilters.isModpack ? "modpack" : "mod"));
         if(searchFilters.mcVersion != null && !searchFilters.mcVersion.isEmpty())
             facetString.append(String.format(",[\"versions:%s\"]", searchFilters.mcVersion));
+        if(searchFilters.loader != null && !searchFilters.loader.isEmpty())
+            facetString.append(String.format(",[\"loaders:%s\"]", searchFilters.loader));
         facetString.append("]");
         params.put("facets", facetString.toString());
         params.put("query", searchFilters.name);
@@ -96,32 +100,64 @@ public class ModrinthApi implements ModpackApi{
 
     @Override
     public ModDetail getModDetails(ModItem item) {
-
         JsonArray response = mApiHandler.get(String.format("project/%s/version", item.id), JsonArray.class);
         if(response == null) return null;
-        System.out.println(response);
-        String[] names = new String[response.size()];
-        String[] mcNames = new String[response.size()];
-        String[] urls = new String[response.size()];
-        String[] hashes = new String[response.size()];
 
-        for (int i=0; i<response.size(); ++i) {
+        Instance selected = Instances.loadSelectedInstance();
+        String minecraftVersion = InstanceModCompatibility.getMinecraftVersion(selected);
+        String loader = InstanceModCompatibility.getLoader(selected);
+
+        ArrayList<String> names = new ArrayList<>();
+        ArrayList<String> mcNames = new ArrayList<>();
+        ArrayList<String> urls = new ArrayList<>();
+        ArrayList<String> hashes = new ArrayList<>();
+
+        for (int i = 0; i < response.size(); ++i) {
             JsonObject version = response.get(i).getAsJsonObject();
-            names[i] = version.get("name").getAsString();
-            mcNames[i] = version.get("game_versions").getAsJsonArray().get(0).getAsString();
-            urls[i] = version.get("files").getAsJsonArray().get(0).getAsJsonObject().get("url").getAsString();
-            // Assume there may not be hashes, in case the API changes
-            JsonObject hashesMap = version.getAsJsonArray("files").get(0).getAsJsonObject()
-                    .get("hashes").getAsJsonObject();
-            if(hashesMap == null || hashesMap.get("sha1") == null){
-                hashes[i] = null;
-                continue;
+            JsonArray gameVersions = version.getAsJsonArray("game_versions");
+            boolean gameMatch = minecraftVersion == null;
+            if (gameVersions != null && minecraftVersion != null) {
+                for (int v = 0; v < gameVersions.size(); v++) {
+                    if (minecraftVersion.equals(gameVersions.get(v).getAsString())) {
+                        gameMatch = true;
+                        break;
+                    }
+                }
             }
+            if (!gameMatch) continue;
 
-            hashes[i] = hashesMap.get("sha1").getAsString();
+            boolean loaderMatch = loader == null || loader.isEmpty();
+            JsonArray loaders = version.getAsJsonArray("loaders");
+            if (loaders != null && loader != null && !loader.isEmpty()) {
+                for (int l = 0; l < loaders.size(); l++) {
+                    if (loader.equalsIgnoreCase(loaders.get(l).getAsString())) {
+                        loaderMatch = true;
+                        break;
+                    }
+                }
+            }
+            if (!loaderMatch) continue;
+
+            JsonArray files = version.getAsJsonArray("files");
+            if (files == null || files.size() == 0) continue;
+            JsonObject file = files.get(0).getAsJsonObject();
+            names.add(version.get("name").getAsString());
+            mcNames.add(minecraftVersion != null ? minecraftVersion :
+                    gameVersions != null && gameVersions.size() > 0 ? gameVersions.get(0).getAsString() : "");
+            urls.add(file.get("url").getAsString());
+
+            JsonObject hashesMap = file.getAsJsonObject("hashes");
+            JsonElement sha1 = hashesMap == null ? null : hashesMap.get("sha1");
+            hashes.add(sha1 == null || sha1.isJsonNull() ? null : sha1.getAsString());
         }
 
-        return new ModDetail(item, names, mcNames, urls, hashes);
+        return new ModDetail(
+                item,
+                names.toArray(new String[0]),
+                mcNames.toArray(new String[0]),
+                urls.toArray(new String[0]),
+                hashes.toArray(new String[0])
+        );
     }
 
     @Override
