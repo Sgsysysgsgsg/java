@@ -179,7 +179,7 @@ public class MainMenuFragment extends Fragment {
             }
 
             @Override
-            public void onSuccess(String profile, String version, String loaderVersion, int modCount) {
+            public void onSuccess(String profile, String version, int modCount) {
                 if (progress.isShowing()) progress.dismiss();
                 ExtraCore.setValue(ExtraConstants.REFRESH_VERSION_SPINNER, null);
                 Toast.makeText(
