@@ -287,11 +287,8 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
 
     private void loadControls() {
         try {
-            // Repair the legacy broken default.json directory created by older builds.
-            File defaultControls = new File(Tools.CTRLDEF_FILE);
-            if (defaultControls.isDirectory() || !defaultControls.exists()) {
-                net.kdt.pojavlaunch.TouchPresetManager.applyPreset(this, "joystick_tap");
-            }
+            // Always make sure the default touch layout is a real file before loading it.
+            net.kdt.pojavlaunch.TouchPresetManager.ensureDefault(this);
 
             // Load keys
             mControlLayout.loadLayout(instance.getLaunchControls());
@@ -493,6 +490,25 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         }
 
         if(toastString != 0) Toast.makeText(ctx, toastString, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (drawerLayout != null && drawerLayout.isDrawerOpen(navDrawer)) {
+            drawerLayout.closeDrawer(navDrawer);
+            return;
+        }
+
+        if (isInEditor) {
+            if (mControlLayout != null) {
+                mControlLayout.askToExit(this);
+            }
+            return;
+        }
+
+        // Android back should behave like Minecraft's ESC key instead of
+        // forcing the user to kill the launcher process.
+        CallbackBridge.sendKeyPress(KeyEvent.KEYCODE_ESCAPE);
     }
 
     @Override
