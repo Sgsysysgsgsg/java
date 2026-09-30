@@ -25,6 +25,9 @@ import net.kdt.pojavlaunch.modloaders.modpacks.models.ModDetail;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.ModItem;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.SearchFilters;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.SearchResult;
+import net.kdt.pojavlaunch.modloaders.modpacks.InstanceModCompatibility;
+import net.kdt.pojavlaunch.instances.Instance;
+import net.kdt.pojavlaunch.instances.Instances;
 import net.kdt.pojavlaunch.utils.FileUtils;
 import net.kdt.pojavlaunch.utils.GsonJsonUtils;
 import net.kdt.pojavlaunch.utils.ZipUtils;
@@ -69,6 +72,10 @@ public class CurseforgeApi implements ModpackApi{
         params.put("sortOrder", "desc");
         if(searchFilters.mcVersion != null && !searchFilters.mcVersion.isEmpty())
             params.put("gameVersion", searchFilters.mcVersion);
+        if(searchFilters.loader != null && !searchFilters.loader.isEmpty()) {
+            int loaderType = InstanceModCompatibility.curseForgeLoaderType(searchFilters.loader);
+            if (loaderType != 0) params.put("modLoaderType", loaderType);
+        }
         if(previousPageResult != null)
             params.put("index", curseforgeSearchResult.previousOffset);
 
@@ -118,23 +125,59 @@ public class CurseforgeApi implements ModpackApi{
         String[] versionUrls = new String[length];
         String[] hashes = new String[length];
         for(int i = 0; i < allModDetails.size(); i++) {
-            JsonObject modDetail = allModDetails.get(i);
-            versionNames[i] = modDetail.get("displayName").getAsString();
+        Instance selected = Instances.loadSelectedInstance();
+        String selectedMinecraft = InstanceModCompatibility.getMinecraftVersion(selected);
+        String selectedLoader = InstanceModCompatibility.getLoader(selected);
+        int selectedLoaderType = InstanceModCompatibility.curseForgeLoaderType(selectedLoader);
+
+        ArrayList<String> filteredNames = new ArrayList<>();
+        ArrayList<String> filteredMcNames = new ArrayList<>();
+        ArrayList<String> filteredUrls = new ArrayList<>();
+        ArrayList<String> filteredHashes = new ArrayList<>();
+
+        for (JsonObject modDetail : allModDetails) {
+            JsonArray gameVersions = modDetail.getAsJsonArray("gameVersions");
+            boolean gameMatch = selectedMinecraft == null;
+            if (gameVersions != null && selectedMinecraft != null) {
+                for (JsonElement jsonElement : gameVersions) {
+                    if (selectedMinecraft.equals(jsonElement.getAsString())) {
+                        gameMatch = true;
+                        break;
+                    }
+                }
+            }
+            if (!gameMatch) continue;
+
+            int fileLoader = modDetail.has("modLoader") && !modDetail.get("modLoader").isJsonNull()
+                    ? modDetail.get("modLoader").getAsInt() : 0;
+            if (selectedLoaderType != 0 && fileLoader != 0 && fileLoader != selectedLoaderType) continue;
 
             JsonElement downloadUrl = modDetail.get("downloadUrl");
-            versionUrls[i] = downloadUrl.getAsString();
+            if (downloadUrl == null || downloadUrl.isJsonNull()) continue;
 
-            JsonArray gameVersions = modDetail.getAsJsonArray("gameVersions");
-            for(JsonElement jsonElement : gameVersions) {
-                String gameVersion = jsonElement.getAsString();
-                if(!sMcVersionPattern.matcher(gameVersion).matches()) {
-                    continue;
+            String mc = selectedMinecraft;
+            if (mc == null && gameVersions != null) {
+                for (JsonElement jsonElement : gameVersions) {
+                    String gameVersion = jsonElement.getAsString();
+                    if(sMcVersionPattern.matcher(gameVersion).matches()) {
+                        mc = gameVersion;
+                        break;
+                    }
                 }
-                mcVersionNames[i] = gameVersion;
-                break;
             }
+            if (mc == null) continue;
 
-            hashes[i] = getSha1FromModData(modDetail);
+            filteredNames.add(modDetail.get("displayName").getAsString());
+            filteredMcNames.add(mc);
+            filteredUrls.add(downloadUrl.getAsString());
+            filteredHashes.add(getSha1FromModData(modDetail));
+        }
+
+        versionNames = filteredNames.toArray(new String[0]);
+        mcVersionNames = filteredMcNames.toArray(new String[0]);
+        versionUrls = filteredUrls.toArray(new String[0]);
+        hashes = filteredHashes.toArray(new String[0]);
+        length = versionNames.length;
         }
         return new ModDetail(item, versionNames, mcVersionNames, versionUrls, hashes);
     }
