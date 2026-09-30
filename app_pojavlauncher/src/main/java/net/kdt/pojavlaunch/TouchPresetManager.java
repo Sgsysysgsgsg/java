@@ -15,6 +15,7 @@ public final class TouchPresetManager {
     public static void applyPreset(Context context, String preset) throws Exception {
         String asset;
         switch (preset) {
+            case "utility": asset = "eyad_touch_utilities.json"; break;
             case "tab_only": asset = "tab_only.json"; break;
             case "dpad_tap": asset = "bedrock_dpad_tap.json"; break;
             case "joystick_aim": asset = "bedrock_joystick_aim.json"; break;
