@@ -222,7 +222,15 @@ public class GameView extends FrameLayout implements PlatformGrabListener, Surfa
                 (eventKeycode == KeyEvent.KEYCODE_T ||
                  eventKeycode == KeyEvent.KEYCODE_SLASH ||
                  eventKeycode == KeyEvent.KEYCODE_NUMPAD_DIVIDE)) {
-            Tools.runOnUiThread(() -> GameActivity.switchKeyboardState(false));
+            // Let Minecraft open its chat screen first, then force the Android IME on.
+            // Using setKeyboardState(true) avoids accidentally toggling an already-open IME off.
+            Tools.runOnUiThread(() -> {
+                postDelayed(() -> {
+                    if(GameActivity.touchCharInput != null && !GameActivity.touchCharInput.hasFocus()) {
+                        GameActivity.toggleKeyboardState(false, 0);
+                    }
+                }, 120);
+            });
         }
 
         if(action == KeyEvent.ACTION_MULTIPLE) return true;
