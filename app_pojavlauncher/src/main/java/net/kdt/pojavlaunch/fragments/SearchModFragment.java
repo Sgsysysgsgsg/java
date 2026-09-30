@@ -39,6 +39,8 @@ import net.kdt.pojavlaunch.modloaders.modpacks.models.SearchFilters;
 import net.kdt.pojavlaunch.profiles.VersionSelectorDialog;
 import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
 import net.kdt.pojavlaunch.instances.Instances;
+import net.kdt.pojavlaunch.instances.Instance;
+import net.kdt.pojavlaunch.modloaders.modpacks.InstanceModCompatibility;
 import net.kdt.pojavlaunch.progresskeeper.TaskCountListener;
 
 import org.apache.commons.io.IOUtils;
@@ -117,6 +119,14 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
         super(R.layout.fragment_mod_search);
         mSearchFilters = new SearchFilters();
         mSearchFilters.isModpack = false;
+
+        // Mods are tied to the currently selected instance. Do not let the user
+        // accidentally browse/download a jar for another Minecraft version/loader.
+        Instance selectedInstance = Instances.loadSelectedInstance();
+        if (selectedInstance != null) {
+            mSearchFilters.mcVersion = InstanceModCompatibility.getMinecraftVersion(selectedInstance);
+            mSearchFilters.loader = InstanceModCompatibility.getLoader(selectedInstance);
+        }
     }
 
     @Override
@@ -159,7 +169,9 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
                    mRecyclerview.getPaddingRight(),
                    mRecyclerview.getPaddingBottom());
         });
-        mFilterButton.setOnClickListener(v -> displayFilterDialog());
+        // The selected instance is the source of truth for Minecraft version + loader.
+        // Remove the old free-form version picker so the Mods screen cannot mix versions.
+        mFilterButton.setVisibility(View.GONE);
         mImportButton = view.findViewById(R.id.mineButton_import_local_modpack);
         mImportButton.setOnClickListener(v -> {
             mImportLauncher.launch("*/*");
