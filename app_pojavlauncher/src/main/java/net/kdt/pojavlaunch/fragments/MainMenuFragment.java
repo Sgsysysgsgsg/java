@@ -6,6 +6,8 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
+import android.text.InputType;
+import android.widget.EditText;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -133,28 +135,63 @@ public class MainMenuFragment extends Fragment {
     }
 
     private void startAutoSetup(Context context, String minecraftVersion) {
+        final EditText nameInput = new EditText(context);
+        nameInput.setSingleLine(true);
+        nameInput.setHint("Example: Survival Touch");
+        nameInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        int padding = (int) (24 * getResources().getDisplayMetrics().density);
+        nameInput.setPadding(padding, 8, padding, 8);
+
+        AlertDialog nameDialog = new AlertDialog.Builder(context)
+                .setTitle("Name your profile")
+                .setMessage("Choose a name for this Minecraft setup.")
+                .setView(nameInput)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton("Install", null)
+                .create();
+        nameDialog.setOnShowListener(dialog -> {
+            AlertDialog alert = (AlertDialog) dialog;
+            alert.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                String profileName = nameInput.getText().toString().trim();
+                if (profileName.isEmpty()) {
+                    nameInput.setError("Enter a profile name");
+                    return;
+                }
+                alert.dismiss();
+                runAutoSetup(context, minecraftVersion, profileName);
+            });
+        });
+        nameDialog.show();
+    }
+
+    private void runAutoSetup(Context context, String minecraftVersion, String profileName) {
         ProgressDialog progress = new ProgressDialog(context);
-        progress.setTitle(R.string.auto_setup_title);
-        progress.setMessage(context.getString(R.string.auto_setup_working));
+        progress.setTitle("Auto Setup • " + minecraftVersion);
+        progress.setMessage("Preparing…");
         progress.setIndeterminate(true);
         progress.setCancelable(false);
         progress.show();
 
-        AutoSetupManager.setup(context, minecraftVersion, new AutoSetupManager.Callback() {
+        AutoSetupManager.setup(context, minecraftVersion, profileName, new AutoSetupManager.Callback() {
             @Override
-            public void onSuccess(String version, String loaderVersion, int modCount) {
-                progress.dismiss();
+            public void onStage(String stage) {
+                if (progress.isShowing()) progress.setMessage(stage);
+            }
+
+            @Override
+            public void onSuccess(String profile, String version, String loaderVersion, int modCount) {
+                if (progress.isShowing()) progress.dismiss();
                 ExtraCore.setValue(ExtraConstants.REFRESH_VERSION_SPINNER, null);
                 Toast.makeText(
                         context,
-                        getString(R.string.auto_setup_success, version),
+                        "Installed " + version + " • " + profile + " • " + modCount + " mods",
                         Toast.LENGTH_LONG
                 ).show();
             }
 
             @Override
             public void onError(Throwable error) {
-                progress.dismiss();
+                if (progress.isShowing()) progress.dismiss();
                 String message = error.getMessage() == null ? error.toString() : error.getMessage();
                 new AlertDialog.Builder(context)
                         .setTitle(R.string.global_error)
