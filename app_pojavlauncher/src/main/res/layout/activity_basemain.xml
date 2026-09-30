@@ -5,10 +5,14 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_height="match_parent"
 	android:layout_width="match_parent"
-	android:layout_alignParentRight="true"
 	android:id="@+id/touch_controller_root"
-	android:background="@drawable/no_focus_shown"
 	android:keepScreenOn="true">
+
+	<androidx.drawerlayout.widget.DrawerLayout
+		android:layout_height="match_parent"
+		android:layout_width="match_parent"
+		android:id="@+id/main_drawer_options"
+		android:background="@drawable/no_focus_shown">
 
 	<FrameLayout
 		android:id="@+id/content_frame"
@@ -124,6 +128,5 @@
 		android:paddingBottom="18dp"
 		android:fitsSystemWindows="false"
 		android:id="@+id/main_navigation_view"/>
-
+	</androidx.drawerlayout.widget.DrawerLayout>
 </top.fifthlight.touchcontroller.proxy.client.android.TouchControllerLayout>
-
