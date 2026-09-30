@@ -76,6 +76,7 @@ import net.kdt.pojavlaunch.utils.MCOptionUtils;
 import net.kdt.pojavlaunch.authenticator.accounts.Account;
 import net.kdt.pojavlaunch.utils.jre.GameRunner;
 import top.fifthlight.touchcontroller.proxy.client.LauncherProxyClient;
+import top.fifthlight.touchcontroller.proxy.client.android.TouchControllerLayout;
 import top.fifthlight.touchcontroller.proxy.client.android.transport.UnixSocketTransportKt;
 
 import java.io.File;
@@ -113,6 +114,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
 
     private QuickSettingSideDialog mQuickSettingSideDialog;
     private LauncherProxyClient mTouchControllerProxy;
+    private TouchControllerLayout mTouchControllerLayout;
     public static final String TOUCH_CONTROLLER_SOCKET_NAME = "EYADLauncherTouchController";
     public static int mForcedPanningHeight = 0;
     public static int mImeHeight = 0;
@@ -336,6 +338,10 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
                     UnixSocketTransportKt.UnixSocketTransport(TOUCH_CONTROLLER_SOCKET_NAME);
             mTouchControllerProxy = new LauncherProxyClient(transport);
             mTouchControllerProxy.run();
+            mTouchControllerLayout = findViewById(R.id.touch_controller_root);
+            if (mTouchControllerLayout != null) {
+                mTouchControllerLayout.setClient(mTouchControllerProxy);
+            }
             Log.i("TouchControllerBridge", "TouchController proxy started: "
                     + TOUCH_CONTROLLER_SOCKET_NAME);
         } catch (Throwable error) {
