@@ -46,6 +46,9 @@ public final class AutoSetupManager {
     public static void setup(Context context, String minecraftVersion, String profileName, Callback callback) {
         PojavApplication.sExecutorService.execute(() -> {
             try {
+                if (net.kdt.pojavlaunch.authenticator.accounts.Accounts.getCurrent() == null) {
+                    throw new IOException("Please add and select a Microsoft or Offline account before Auto Setup.");
+                }
                 if (ProgressKeeper.hasOngoingTasks()) {
                     throw new IOException("Another download is already running. Please wait for it to finish.");
                 }
