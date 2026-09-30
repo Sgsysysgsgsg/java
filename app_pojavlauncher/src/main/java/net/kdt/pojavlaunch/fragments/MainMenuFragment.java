@@ -20,6 +20,7 @@ import androidx.fragment.app.Fragment;
 import com.kdt.mcgui.mcVersionSpinner;
 
 import net.kdt.pojavlaunch.AutoSetupManager;
+import net.kdt.pojavlaunch.authenticator.accounts.Accounts;
 import net.kdt.pojavlaunch.JVersionList;
 import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.extra.ExtraConstants;
@@ -68,6 +69,17 @@ public class MainMenuFragment extends Fragment {
     }
 
     private void openAutoSetup(Context context) {
+        if (Accounts.getCurrent() == null) {
+            new AlertDialog.Builder(context)
+                    .setTitle("Add an account first")
+                    .setMessage("Auto Setup needs a selected account. You can use a Microsoft or Offline account.")
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton("Add account", (dialog, which) ->
+                            ExtraCore.setValue(ExtraConstants.SELECT_AUTH_METHOD, true))
+                    .show();
+            return;
+        }
+
         final String[] typeValues = {"release", "snapshot", "old_beta", "old_alpha"};
         final int[] typeLabels = {
                 R.string.mcl_setting_veroption_release,
