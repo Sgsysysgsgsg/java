@@ -19,7 +19,7 @@ public final class TouchPresetManager {
             default: asset = "bedrock_joystick_tap.json"; break;
         }
         File target = new File(Tools.CTRLDEF_FILE);
-        Tools.copyAssetFile(context, asset, target, true);
+        Tools.copyAssetFile(context, asset, target.getAbsolutePath(), true);
         LauncherPreferences.DEFAULT_PREF.edit()
                 .putString("defaultCtrl", Tools.CTRLDEF_FILE)
                 .putString("touch_control_preset", preset)
