@@ -56,22 +56,23 @@
                 android:id="@+id/auto_setup_button"
                 style="@style/LauncherMenuButton.Universal"
                 android:layout_width="match_parent"
-                android:text="⚙️ Auto Setup" />
+                android:drawableStart="@drawable/ic_px_folder"
+                android:text="@string/auto_setup_title" />
 
             <com.kdt.mcgui.LauncherMenuButton
                 android:id="@+id/mods_button"
                 style="@style/LauncherMenuButton.Universal"
                 android:layout_width="match_parent"
                 android:layout_marginTop="@dimen/_10sdp"
-                android:drawableStart="@drawable/ic_modrinth"
-                android:text="🧩 Mods" />
+                android:drawableStart="@drawable/ic_px_folder"
+                android:text="@string/mods_title" />
 
             <com.kdt.mcgui.LauncherMenuButton
                 android:id="@+id/open_files_button"
                 style="@style/LauncherMenuButton.Universal"
                 android:layout_width="match_parent"
                 android:drawableStart="@drawable/ic_px_folder"
-                android:text="📂 Open game directory" />
+                android:text="@string/mcl_button_open_directory" />
 
         </LinearLayout>
     </ScrollView>
