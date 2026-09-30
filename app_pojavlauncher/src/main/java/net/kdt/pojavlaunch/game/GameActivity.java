@@ -110,10 +110,6 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     private GameService.LocalBinder mServiceBinder;
 
     private QuickSettingSideDialog mQuickSettingSideDialog;
-    private float mSwipeStartX;
-    private float mSwipeStartY;
-    private boolean mSwipeTracking;
-
     public static int mForcedPanningHeight = 0;
     public static int mImeHeight = 0;
 
@@ -231,6 +227,8 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         mDrawerPullButton.setOnClickListener(v -> onClickedMenu());
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
         launcherGLView.mCursorView.setCursorScale(LauncherPreferences.PREF_MOUSESCALE);
+        // The on-screen virtual mouse is disabled for the minimal touch layout.
+        launcherGLView.mCursorView.setVisibility(View.GONE);
         weakCursor = new WeakReference<>(launcherGLView.mCursorView);
 
         try {
@@ -251,16 +249,21 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
 
             setTitle(getString(R.string.app_short_name) + " (" + version + ")");
 
-            // Menu
+            // Minimal in-game menu. Gameplay controls are intentionally TAB-only.
+            String[] inGameMenuItems = {"⚙ Settings", "⌨ Keyboard", "✕ Exit"};
             gameActionArrayAdapter = new ArrayAdapter<>(this,
-                    android.R.layout.simple_list_item_1, getResources().getStringArray(R.array.menu_ingame));
+                    android.R.layout.simple_list_item_1, inGameMenuItems);
             gameActionClickListener = (parent, view, position, id) -> {
                 switch(position) {
-                     case 0: dialogForceClose(GameActivity.this); break;
-                     case 1: openLogOutput(); break;
-                     case 2: dialogSendCustomKey(); break;
-                     case 3: openQuickSettings(); break;
-                     case 4: openCustomControls(); break;
+                    case 0:
+                        openQuickSettings();
+                        break;
+                    case 1:
+                        switchKeyboardState(false);
+                        break;
+                    case 2:
+                        dialogForceClose(GameActivity.this);
+                        break;
                 }
                 drawerLayout.closeDrawers();
             };
@@ -290,24 +293,17 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
 
     private void loadControls() {
         try {
-            // Always make sure the default touch layout is a real file before loading it.
-            net.kdt.pojavlaunch.TouchPresetManager.ensureDefault(this);
-
-            // Load keys
-            mControlLayout.loadLayout(instance.getLaunchControls());
-        } catch(IOException e) {
-            try {
-                Log.w("MainActivity", "Unable to load the control file, loading the default now", e);
-                mControlLayout.loadLayout(Tools.CTRLDEF_FILE);
-            } catch (IOException ioException) {
-                Tools.showError(this, ioException);
-            }
+            // Always use the minimal TAB-only layout. This prevents legacy profiles
+            // from restoring joystick/mouse/attack buttons and their old popups.
+            net.kdt.pojavlaunch.TouchPresetManager.applyPreset(this, "tab_only");
+            mControlLayout.loadLayout(Tools.CTRLDEF_FILE);
+            mControlLayout.setControlVisible(true);
         } catch (Throwable th) {
             Tools.showError(this, th);
         }
-        mDrawerPullButton.setVisibility(View.VISIBLE);
-        boolean controlsEnabled = LauncherPreferences.DEFAULT_PREF.getBoolean("touchControlsEnabled", false);
-        mControlLayout.setControlVisible(controlsEnabled);
+
+        // Settings are opened through the DrawerLayout edge swipe.
+        mDrawerPullButton.setVisibility(View.GONE);
     }
 
     @Override
@@ -456,70 +452,16 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
                     mHotbarView.onResolutionChanged();
                 }
 
-                @Override
-                public void onGyroStateChanged() {
-                    mGyroControl.updateOrientation();
-                    if (PREF_ENABLE_GYRO) {
-                        mGyroControl.enable();
-                    } else {
-                        mGyroControl.disable();
-                    }
-                }
 
-                @Override
-                public void onButtonTransparencyChanged() {
-                    mControlLayout.updateButtonOpacity();
-                }
-
-                @Override
-                public void onControlVisibilityChanged(boolean enabled) {
-                    mControlLayout.setControlVisible(enabled);
-                    LauncherPreferences.DEFAULT_PREF.edit().putBoolean("touchControlsEnabled", enabled).apply();
-                }
             };
         }
         mQuickSettingSideDialog.appear(true);
     }
 
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent event) {
-        boolean dispatched = super.dispatchTouchEvent(event);
-        if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-            mSwipeStartX = event.getRawX();
-            mSwipeStartY = event.getRawY();
-            mSwipeTracking = true;
-        } else if (event.getActionMasked() == MotionEvent.ACTION_UP && mSwipeTracking
-                && (mControlLayout == null || !mControlLayout.getModifiable())) {
-            float dx = event.getRawX() - mSwipeStartX;
-            float dy = event.getRawY() - mSwipeStartY;
-            if (Math.abs(dx) > 140f && Math.abs(dx) > Math.abs(dy) * 1.5f) {
-                if (drawerLayout.isDrawerOpen(navDrawer)) drawerLayout.closeDrawer(navDrawer);
-                else drawerLayout.openDrawer(navDrawer);
-            }
-            mSwipeTracking = false;
-        }
-        return dispatched;
-    }
-
     public static void toggleMouse(Context ctx) {
-        // Avoid going through the JNI each time.
-        if (Platform.isGrabbing()) return;
+        // Kept as a compatibility no-op for legacy imported control maps.
         GameCursorView cursorView = Tools.getWeakReference(weakCursor);
-        if(cursorView == null) return;
-        int toastString = 0;
-        switch (cursorView.getVisibility()) {
-            case View.GONE:
-            case View.INVISIBLE:
-                toastString = R.string.control_mouseon;
-                cursorView.setVisibility(View.VISIBLE);
-                break;
-            case View.VISIBLE:
-                toastString = R.string.control_mouseoff;
-                cursorView.setVisibility(View.GONE);
-                break;
-        }
-
-        if(toastString != 0) Toast.makeText(ctx, toastString, Toast.LENGTH_SHORT).show();
+        if (cursorView != null) cursorView.setVisibility(View.GONE);
     }
 
     @Override
