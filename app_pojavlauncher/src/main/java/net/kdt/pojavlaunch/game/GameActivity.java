@@ -76,7 +76,7 @@ import net.kdt.pojavlaunch.utils.MCOptionUtils;
 import net.kdt.pojavlaunch.authenticator.accounts.Account;
 import net.kdt.pojavlaunch.utils.jre.GameRunner;
 import top.fifthlight.touchcontroller.proxy.client.LauncherProxyClient;
-import top.fifthlight.touchcontroller.proxy.client.android.transport.UnixSocketTransport;
+import top.fifthlight.touchcontroller.proxy.client.android.transport.UnixSocketTransportKt;
 
 import java.io.File;
 import java.io.IOException;
@@ -333,7 +333,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     private void initTouchControllerProxy() {
         try {
             top.fifthlight.touchcontroller.proxy.client.MessageTransport transport =
-                    UnixSocketTransport(TOUCH_CONTROLLER_SOCKET_NAME);
+                    UnixSocketTransportKt.UnixSocketTransport(TOUCH_CONTROLLER_SOCKET_NAME);
             mTouchControllerProxy = new LauncherProxyClient(transport);
             mTouchControllerProxy.run();
             Log.i("TouchControllerBridge", "TouchController proxy started: "
