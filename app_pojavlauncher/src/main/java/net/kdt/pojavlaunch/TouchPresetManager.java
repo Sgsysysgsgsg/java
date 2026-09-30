@@ -15,6 +15,7 @@ public final class TouchPresetManager {
     public static void applyPreset(Context context, String preset) throws Exception {
         String asset;
         switch (preset) {
+            case "tab_only": asset = "tab_only.json"; break;
             case "dpad_tap": asset = "bedrock_dpad_tap.json"; break;
             case "joystick_aim": asset = "bedrock_joystick_aim.json"; break;
             case "joystick_tap":
@@ -64,7 +65,7 @@ public final class TouchPresetManager {
         try {
             File target = new File(Tools.CTRLDEF_FILE);
             if (target.isDirectory() || !target.exists()) {
-                applyPreset(context, "joystick_tap");
+                applyPreset(context, "tab_only");
             }
         } catch (Exception ignored) { }
     }
