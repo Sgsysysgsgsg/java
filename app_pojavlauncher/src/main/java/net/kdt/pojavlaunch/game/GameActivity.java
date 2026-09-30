@@ -290,7 +290,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
             // Repair the legacy broken default.json directory created by older builds.
             File defaultControls = new File(Tools.CTRLDEF_FILE);
             if (defaultControls.isDirectory() || !defaultControls.exists()) {
-                TouchPresetManager.applyPreset(this, "joystick_tap");
+                net.kdt.pojavlaunch.TouchPresetManager.applyPreset(this, "joystick_tap");
             }
 
             // Load keys
