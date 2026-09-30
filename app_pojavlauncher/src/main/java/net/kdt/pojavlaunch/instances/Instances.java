@@ -122,7 +122,7 @@ public class Instances {
                 .putString(
                         LauncherPreferences.PREF_KEY_CURRENT_INSTANCE,
                         instance.mInstanceRoot.getName()
-                ).apply();
+                ).commit();
     }
 
     /**
