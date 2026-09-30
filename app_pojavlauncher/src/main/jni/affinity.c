@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 //
 // Created by maks on 19.06.2023.
 //
