@@ -5,6 +5,8 @@ import android.content.Context;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 
 /** Built-in touch preset helper. Kept for compatibility with existing profiles. */
 public final class TouchPresetManager {
@@ -42,8 +44,14 @@ public final class TouchPresetManager {
             throw new java.io.IOException("Unable to create controlmap directory");
         }
 
-        // This overload expects an output DIRECTORY, not the final file path.
-        Tools.copyAssetFile(context, asset, parent, true);
+        try (InputStream input = context.getAssets().open(asset);
+             FileOutputStream output = new FileOutputStream(target, false)) {
+            byte[] buffer = new byte[8192];
+            int count;
+            while ((count = input.read(buffer)) != -1) {
+                output.write(buffer, 0, count);
+            }
+        }
 
         LauncherPreferences.DEFAULT_PREF.edit()
                 .putString("defaultCtrl", Tools.CTRLDEF_FILE)
