@@ -233,7 +233,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         mControlLayout.setMenuListener(this);
 
         mDrawerPullButton.setOnClickListener(v -> onClickedMenu());
-        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+        // Disable edge-swipe opening of the launcher settings drawer.\n        // Minecraft touch gestures should never accidentally pull the settings over the game.\n        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
         launcherGLView.mCursorView.setCursorScale(LauncherPreferences.PREF_MOUSESCALE);
         // The on-screen virtual mouse is disabled for the minimal touch layout.
         launcherGLView.mCursorView.setVisibility(View.GONE);
