@@ -22,6 +22,38 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
+            <ImageView
+                android:id="@+id/launcher_logo"
+                android:layout_width="@dimen/_58sdp"
+                android:layout_height="@dimen/_58sdp"
+                android:layout_marginTop="@dimen/_10sdp"
+                android:contentDescription="@string/app_short_name"
+                android:src="@drawable/ic_eyad_logo"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
+
+            <TextView
+                android:id="@+id/launcher_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/_10sdp"
+                android:text="@string/app_short_name"
+                android:textColor="@color/primary_text"
+                android:textSize="@dimen/_18ssp"
+                android:fontFamily="@font/noto_sans_bold"
+                app:layout_constraintTop_toTopOf="@id/launcher_logo"
+                app:layout_constraintStart_toEndOf="@id/launcher_logo" />
+
+            <TextView
+                android:id="@+id/launcher_subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/launcher_tagline"
+                android:textColor="@color/secondary_text"
+                android:textSize="@dimen/_9ssp"
+                app:layout_constraintTop_toBottomOf="@id/launcher_title"
+                app:layout_constraintStart_toStartOf="@id/launcher_title" />
+
             <androidx.constraintlayout.widget.Guideline
                 android:id="@+id/center_guideline"
                 android:layout_width="0dp"
@@ -34,7 +66,7 @@
                 android:layout_width="0dp"
                 android:drawableStart="@drawable/ic_px_book"
                 android:text="@string/mcl_tab_wiki"
-                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/launcher_logo"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/social_divider"/>
             <View
