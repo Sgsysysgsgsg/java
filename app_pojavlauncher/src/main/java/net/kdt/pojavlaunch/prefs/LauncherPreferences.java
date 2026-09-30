@@ -95,7 +95,7 @@ public class LauncherPreferences {
         PREF_DISABLE_SWAP_HAND = DEFAULT_PREF.getBoolean("disableDoubleTap", false);
         PREF_RAM_ALLOCATION = DEFAULT_PREF.getInt("allocation", findBestRAMAllocation(ctx));
         PREF_CUSTOM_JAVA_ARGS = DEFAULT_PREF.getString("javaArgs", "");
-        PREF_SUSTAINED_PERFORMANCE = DEFAULT_PREF.getBoolean("sustainedPerformance", isDevicePowerful);
+        PREF_SUSTAINED_PERFORMANCE = DEFAULT_PREF.getBoolean("sustainedPerformance", true);
         PREF_VIRTUAL_MOUSE_START = DEFAULT_PREF.getBoolean("mouse_start", false);
         PREF_USE_ALTERNATE_SURFACE = DEFAULT_PREF.getBoolean("alternate_surface", isDevicePowerful);
         PREF_JAVA_SANDBOX = DEFAULT_PREF.getBoolean("java_sandbox", true);
