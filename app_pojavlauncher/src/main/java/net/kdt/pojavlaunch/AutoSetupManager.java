@@ -9,6 +9,7 @@ import net.kdt.pojavlaunch.downloader.Downloader;
 import net.kdt.pojavlaunch.downloader.TaskMetadata;
 import net.kdt.pojavlaunch.instances.Instance;
 import net.kdt.pojavlaunch.instances.Instances;
+import net.kdt.pojavlaunch.instances.InstanceSetter;
 import net.kdt.pojavlaunch.mirrors.DownloadMirror;
 import net.kdt.pojavlaunch.modloaders.FabricVersion;
 import net.kdt.pojavlaunch.modloaders.FabriclikeUtils;
@@ -199,18 +200,23 @@ public final class AutoSetupManager {
         }
 
         try {
-            new Downloader(com.kdt.mcgui.ProgressLayout.INSTALL_MODPACK) {
-                @Override
-                public void download() throws IOException, InterruptedException {
-                    runDownloads(tasks);
-                }
-            }.download();
+            new AutoDownloader().download(tasks);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException("Auto Setup was interrupted", e);
         }
 
         return tasks.size();
+    }
+
+    private static final class AutoDownloader extends Downloader {
+        AutoDownloader() {
+            super(com.kdt.mcgui.ProgressLayout.INSTALL_MODPACK);
+        }
+
+        void download(ArrayList<TaskMetadata> tasks) throws IOException, InterruptedException {
+            runDownloads(tasks);
+        }
     }
 
     private static JsonArray getProjectVersions(String project, String minecraftVersion, String loader)
