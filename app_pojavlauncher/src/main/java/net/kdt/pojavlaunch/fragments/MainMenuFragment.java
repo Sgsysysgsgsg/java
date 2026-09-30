@@ -101,7 +101,7 @@ public class MainMenuFragment extends Fragment {
     private void startAutoSetup(Context context, String minecraftVersion) {
         ProgressDialog progress = new ProgressDialog(context);
         progress.setTitle(R.string.auto_setup_title);
-        progress.setMessage(R.string.auto_setup_working);
+        progress.setMessage(context.getString(R.string.auto_setup_working));
         progress.setIndeterminate(true);
         progress.setCancelable(false);
         progress.show();
