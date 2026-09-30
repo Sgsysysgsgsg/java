@@ -114,6 +114,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     private GameService.LocalBinder mServiceBinder;
 
     private QuickSettingSideDialog mQuickSettingSideDialog;
+    private boolean mInventoryUtilityOpen = false;
     private LauncherProxyClient mTouchControllerProxy;
     private TouchControllerLayout mTouchControllerLayout;
     public static final String TOUCH_CONTROLLER_SOCKET_NAME = "EYADLauncherTouchController";
@@ -333,12 +334,29 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
             TouchPresetManager.applyPreset(this, "utility");
             mControlLayout.loadLayout(LauncherPreferences.PREF_DEFAULTCTRL_PATH);
             mControlLayout.setControlVisible(true);
+            updateUtilityControls();
         } catch (Exception error) {
             Log.e("TouchControls", "Failed to load utility controls", error);
             mControlLayout.setControlVisible(false);
         }
         // TouchController handles the gameplay menu surface.
         mDrawerPullButton.setVisibility(View.GONE);
+    }
+
+    /** Update the small INV/BACK/Keyboard overlay according to the current Minecraft screen. */
+    public void updateUtilityControls() {
+        if (mControlLayout == null) return;
+        boolean inGame = Platform.isGrabbing();
+        boolean inventoryOpen = mInventoryUtilityOpen;
+        mControlLayout.setNamedControlVisible("INV", inGame && !inventoryOpen);
+        mControlLayout.setNamedControlVisible("BACK", inventoryOpen);
+        mControlLayout.setNamedControlVisible("Keyboard", !inGame && !inventoryOpen);
+    }
+
+    /** Called by the utility controls/GameView when the inventory is opened or closed. */
+    public void setInventoryUtilityOpen(boolean open) {
+        mInventoryUtilityOpen = open;
+        updateUtilityControls();
     }
 
     @Override
