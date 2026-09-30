@@ -6,7 +6,7 @@ import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 
 import java.io.File;
 
-/** Lightweight built-in Bedrock-style touch presets. */
+/** Built-in touch preset helper. Kept for compatibility with existing profiles. */
 public final class TouchPresetManager {
     private TouchPresetManager() {}
 
@@ -18,8 +18,33 @@ public final class TouchPresetManager {
             case "joystick_tap":
             default: asset = "bedrock_joystick_tap.json"; break;
         }
+
         File target = new File(Tools.CTRLDEF_FILE);
-        Tools.copyAssetFile(context, asset, target.getAbsolutePath(), true);
+
+        // Older builds accidentally created default.json as a directory.
+        // Remove that broken directory before writing the real file.
+        if (target.isDirectory()) {
+            File[] children = target.listFiles();
+            if (children != null) {
+                for (File child : children) {
+                    if (child.isDirectory()) {
+                        deleteTree(child);
+                    } else {
+                        child.delete();
+                    }
+                }
+            }
+            target.delete();
+        }
+
+        File parent = target.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs() && !parent.isDirectory()) {
+            throw new java.io.IOException("Unable to create controlmap directory");
+        }
+
+        // This overload expects an output DIRECTORY, not the final file path.
+        Tools.copyAssetFile(context, asset, parent, true);
+
         LauncherPreferences.DEFAULT_PREF.edit()
                 .putString("defaultCtrl", Tools.CTRLDEF_FILE)
                 .putString("touch_control_preset", preset)
@@ -30,7 +55,20 @@ public final class TouchPresetManager {
     public static void ensureDefault(Context context) {
         try {
             File target = new File(Tools.CTRLDEF_FILE);
-            if (!target.exists()) applyPreset(context, "joystick_tap");
+            if (target.isDirectory() || !target.exists()) {
+                applyPreset(context, "joystick_tap");
+            }
         } catch (Exception ignored) { }
+    }
+
+    private static void deleteTree(File file) {
+        File[] children = file.listFiles();
+        if (children != null) {
+            for (File child : children) {
+                if (child.isDirectory()) deleteTree(child);
+                else child.delete();
+            }
+        }
+        file.delete();
     }
 }
