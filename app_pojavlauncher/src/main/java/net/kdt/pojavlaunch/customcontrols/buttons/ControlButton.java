@@ -212,6 +212,18 @@ public class ControlButton extends TextView implements ControlInterface {
                 CallbackBridge.setModifiers(keycode, isDown);
                 int modifiers = CallbackBridge.getCurrentMods();
                 PLATFORM.sendKeyEvent(keycode, isDown ? 1 : 0, modifiers);
+
+                // Keep the small INV/BACK overlay synchronized with the actual
+                // inventory key state. This also works for touch buttons because
+                // their key events do not pass through GameView.processKeyEvent().
+                if (isDown && getContext() instanceof GameActivity) {
+                    GameActivity activity = (GameActivity) getContext();
+                    if (keycode == KeyEvent.KEYCODE_E) {
+                        activity.setInventoryUtilityOpen(true);
+                    } else if (keycode == KeyEvent.KEYCODE_ESCAPE) {
+                        activity.setInventoryUtilityOpen(false);
+                    }
+                }
             }else{
                 Log.i("punjabilauncher", "sendSpecialKey("+keycode+","+isDown+")");
                 sendSpecialKey(keycode, isDown);
