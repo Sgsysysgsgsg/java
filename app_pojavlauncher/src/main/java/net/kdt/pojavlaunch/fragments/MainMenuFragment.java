@@ -5,6 +5,7 @@ import static net.kdt.pojavlaunch.Tools.shareLog;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -19,6 +20,7 @@ import androidx.fragment.app.Fragment;
 import com.kdt.mcgui.mcVersionSpinner;
 
 import net.kdt.pojavlaunch.CustomControlsActivity;
+import net.kdt.pojavlaunch.TouchPresetManager;
 import git.artdeell.mojo.R;
 
 import net.kdt.pojavlaunch.Tools;
@@ -52,6 +54,7 @@ public class MainMenuFragment extends Fragment {
         Button mNewsButton = view.findViewById(R.id.news_button);
         Button mDiscordButton = view.findViewById(R.id.social_media_button);
         Button mCustomControlButton = view.findViewById(R.id.custom_control_button);
+        Button mTouchPresetButton = view.findViewById(R.id.touch_preset_button);
         Button mInstallJarButton = view.findViewById(R.id.install_jar_button);
         Button mModsButton = view.findViewById(R.id.mods_button);
         Button mShareLogsButton = view.findViewById(R.id.share_logs_button);
@@ -64,6 +67,7 @@ public class MainMenuFragment extends Fragment {
         mNewsButton.setOnClickListener(v -> Tools.openURL(requireActivity(), Tools.URL_HOME));
         mDiscordButton.setOnClickListener(v -> Tools.openURL(requireActivity(), getString(R.string.social_media_invite)));
         mCustomControlButton.setOnClickListener(v -> startActivity(new Intent(requireContext(), CustomControlsActivity.class)));
+        mTouchPresetButton.setOnClickListener(v -> showTouchPresetDialog());
         mInstallJarButton.setOnClickListener(v -> runInstallerWithConfirmation());
         mModsButton.setOnClickListener(v -> Tools.swapFragment(requireActivity(), SearchModFragment.class, SearchModFragment.TAG, null));
         mEditProfileButton.setOnClickListener(v -> mVersionSpinner.openProfileEditor(requireActivity()));
@@ -79,6 +83,31 @@ public class MainMenuFragment extends Fragment {
             Tools.swapFragment(requireActivity(), GamepadMapperFragment.class, GamepadMapperFragment.TAG, null);
             return true;
         });
+    }
+
+    private void showTouchPresetDialog() {
+        String[] presets = {
+                getString(R.string.touch_preset_dpad),
+                getString(R.string.touch_preset_joystick_aim),
+                getString(R.string.touch_preset_joystick_tap)
+        };
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle(R.string.touch_preset_dialog_title)
+                .setItems(presets, (dialog, which) -> {
+                    String preset;
+                    switch (which) {
+                        case 0: preset = "dpad_tap"; break;
+                        case 1: preset = "joystick_aim"; break;
+                        default: preset = "joystick_tap"; break;
+                    }
+                    try {
+                        TouchPresetManager.applyPreset(requireContext(), preset);
+                        Toast.makeText(requireContext(), R.string.touch_preset_applied, Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                })
+                .show();
     }
 
     private void openGameDirectory(Context context) {
