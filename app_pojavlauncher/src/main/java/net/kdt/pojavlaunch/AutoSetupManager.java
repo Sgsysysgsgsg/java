@@ -76,7 +76,7 @@ public final class AutoSetupManager {
                 // Verify the selection is immediately readable before starting downloads.
                 Instance selectedNow = Instances.loadSelectedInstance();
                 if (selectedNow == null ||
-                        !instance.mInstanceRoot.equals(selectedNow.mInstanceRoot)) {
+                        !instance.getGameDirectory().getAbsolutePath().equals(selectedNow.getGameDirectory().getAbsolutePath())) {
                     throw new IOException("The new Minecraft instance could not be selected. Please try Auto Setup again.");
                 }
 
