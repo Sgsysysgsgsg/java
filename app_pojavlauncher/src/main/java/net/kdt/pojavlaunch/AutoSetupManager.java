@@ -73,6 +73,13 @@ public final class AutoSetupManager {
                 instance.maybeWrite();
                 Instances.setSelectedInstance(instance);
 
+                // Verify the selection is immediately readable before starting downloads.
+                Instance selectedNow = Instances.loadSelectedInstance();
+                if (selectedNow == null ||
+                        !instance.mInstanceRoot.equals(selectedNow.mInstanceRoot)) {
+                    throw new IOException("The new Minecraft instance could not be selected. Please try Auto Setup again.");
+                }
+
                 notifyStage(callback, "Downloading Minecraft files…");
                 downloadGame(context, fabricVersion);
 
@@ -341,7 +348,17 @@ public final class AutoSetupManager {
         }
 
         void download(ArrayList<TaskMetadata> tasks) throws IOException, InterruptedException {
-            runDownloads(tasks);
+            try {
+                runDownloads(tasks);
+            } finally {
+                // Downloader reports progress but does not close this progress key itself.
+                // Always end it so the launcher cannot remain stuck on "Downloading files".
+                ProgressKeeper.submitProgress(
+                        com.kdt.mcgui.ProgressLayout.INSTALL_MODPACK,
+                        -1,
+                        -1
+                );
+            }
         }
     }
 }
