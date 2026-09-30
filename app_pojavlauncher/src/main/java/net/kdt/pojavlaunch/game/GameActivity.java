@@ -483,10 +483,11 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
+        boolean dispatched = super.dispatchTouchEvent(event);
         if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
             mSwipeStartX = event.getRawX();
             mSwipeStartY = event.getRawY();
-            mSwipeTracking = Math.abs(mSwipeStartY) < getResources().getDisplayMetrics().height * 0.92f;
+            mSwipeTracking = true;
         } else if (event.getActionMasked() == MotionEvent.ACTION_UP && mSwipeTracking
                 && (mControlLayout == null || !mControlLayout.getModifiable())) {
             float dx = event.getRawX() - mSwipeStartX;
@@ -494,12 +495,10 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
             if (Math.abs(dx) > 140f && Math.abs(dx) > Math.abs(dy) * 1.5f) {
                 if (drawerLayout.isDrawerOpen(navDrawer)) drawerLayout.closeDrawer(navDrawer);
                 else drawerLayout.openDrawer(navDrawer);
-                mSwipeTracking = false;
-                return true;
             }
             mSwipeTracking = false;
         }
-        return super.dispatchTouchEvent(event);
+        return dispatched;
     }
 
     public static void toggleMouse(Context ctx) {
