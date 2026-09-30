@@ -268,6 +268,18 @@ public class ControlLayout extends FrameLayout {
 		}
 	}
 
+	/** Show/hide one of the small launcher utility controls without changing the main control layout. */
+	public void setNamedControlVisible(String name, boolean visible) {
+		if (mButtons == null) getButtonChildren();
+		for (ControlInterface button : getButtonChildren()) {
+			ControlData properties = button.getProperties();
+			if (name.equals(properties.name)) {
+				button.setVisible(visible && mControlVisible);
+				return;
+			}
+		}
+	}
+
 	public void setModifiable(boolean isModifiable) {
 		if(!isModifiable && mModifiable){
 			removeEditWindow();
