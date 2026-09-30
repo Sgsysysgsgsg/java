@@ -13,40 +13,116 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-22.04
+
     env:
       UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_NEXT_KEYSTORE_PASSWORD }}
       MOJOPUB_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_NEXT_KEYSTORE_PASSWORD }}
       CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
+          fetch-depth: 1
 
-      - name: Ensure native Mojo components
+      # The project expects the Mojo native components to be available
+      # under app_pojavlauncher/src/main/jni/.
+      - name: Prepare native Mojo components
         shell: bash
         run: |
-          set -e
+          set -euxo pipefail
 
           rm -rf glfw sdl mojoexec
 
-          git clone --depth 1 --recurse-submodules https://github.com/MojoLauncher/glfw glfw
-          git clone --depth 1 --recurse-submodules https://github.com/MojoLauncher/MojoSDL sdl
-          git clone --depth 1 --recurse-submodules https://github.com/MojoLauncher/mojoexec mojoexec
+          git clone --depth 1 --recurse-submodules \
+            https://github.com/MojoLauncher/glfw glfw
+
+          git clone --depth 1 --recurse-submodules \
+            https://github.com/MojoLauncher/MojoSDL sdl
+
+          git clone --depth 1 --recurse-submodules \
+            https://github.com/MojoLauncher/mojoexec mojoexec
 
           test -f glfw/jni_bindings/build.gradle
           test -f sdl/jni_bindings/build.gradle
           test -f mojoexec/jni_bindings/build.gradle
+          test -f mojoexec/CMakeLists.txt
 
           mkdir -p app_pojavlauncher/src/main/jni
 
-          ln -sfn ../../../../glfw app_pojavlauncher/src/main/jni/glfw
-          ln -sfn ../../../../sdl app_pojavlauncher/src/main/jni/sdl
-          ln -sfn ../../../../mojoexec app_pojavlauncher/src/main/jni/mojoexec
+          ln -sfn ../../../../glfw \
+            app_pojavlauncher/src/main/jni/glfw
+
+          ln -sfn ../../../../sdl \
+            app_pojavlauncher/src/main/jni/sdl
+
+          ln -sfn ../../../../mojoexec \
+            app_pojavlauncher/src/main/jni/mojoexec
+
+      # Android NDK 29 no longer exposes the Linux CPU affinity API used by
+      # the upstream MojoExec affinity implementation in the same way.
+      # Replace that optional implementation with Android-safe no-op symbols.
+      # This keeps the launcher buildable without changing the upstream
+      # MojoExec repository.
+      - name: Patch MojoExec CPU affinity for Android
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path("mojoexec/affinity.c")
+
+          android_stub = r'''#include <jni.h>
+
+/*
+ * Android NDK compatibility stub.
+ *
+ * MojoExec CPU big-core affinity is optional. Android NDK 29 does not
+ * provide the Linux cpu_set_t / CPU_SET_S / sched_setaffinity API expected
+ * by the original desktop implementation, so keep the exported symbols
+ * but make the feature a safe no-op on Android.
+ */
+
+void mojoexec_make_bigcore_affine(void) {
+}
+
+JNIEXPORT void JNICALL
+Java_git_artdeell_mojoexec_MojoExec_setUseBigCoreAffinity(
+        JNIEnv *env,
+        jclass clazz,
+        jboolean enable) {
+    (void) env;
+    (void) clazz;
+    (void) enable;
+}
+
+/* Compatibility symbol for forks that still reference the old name. */
+void make_big_core_affine(void) {
+}
+'''
+
+          path.write_text(android_stub, encoding="utf-8")
+          print("Patched:", path)
+          print(path.read_text(encoding="utf-8"))
+
+          PY
+
+          test -s mojoexec/affinity.c
+
+      - name: Verify native component paths
+        shell: bash
+        run: |
+          set -euxo pipefail
 
           test -f app_pojavlauncher/src/main/jni/glfw/CMakeLists.txt
           test -f app_pojavlauncher/src/main/jni/sdl/CMakeLists.txt
           test -f app_pojavlauncher/src/main/jni/mojoexec/CMakeLists.txt
+          test -f app_pojavlauncher/src/main/jni/mojoexec/affinity.c
+
+          echo "Native components are ready."
 
       - name: Get LTW
         uses: dawidd6/action-download-artifact@v6
@@ -60,7 +136,7 @@ jobs:
           path: app_pojavlauncher/libs
 
       - name: Get Mesa
-        uses: dawidd6/action-download-artifact@v6  
+        uses: dawidd6/action-download-artifact@v6
         continue-on-error: true
         with:
           github_token: ${{ secrets.MESA_ACTIONS }}
@@ -71,58 +147,129 @@ jobs:
           name: mesa-aar
           path: app_pojavlauncher/libs
 
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.14.3"
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-      - name: Create out directory
-        run: mkdir out
-      - name: Build Publishing .aab
-        if: github.repository_owner == 'MojoLauncher' && github.ref_name == 'v3_openjdk'
+      - name: Create output directory
+        shell: bash
         run: |
-          gradle :app_pojavlauncher:bundleFullGplay
-          mv app_pojavlauncher/build/outputs/bundle/fullGplay/app_pojavlauncher-full-gplay.aab out/app-gplay.aab
+          set -euxo pipefail
+          rm -rf out
+          mkdir -p out
 
-      - name: Build Debug .apk
+      - name: Clean Gradle
+        shell: bash
         run: |
-          # Build the launcher
-          gradle :app_pojavlauncher:assembleFullDebug
-          mv app_pojavlauncher/build/outputs/apk/full/debug/app_pojavlauncher-full-debug.apk out/app-debug-full.apk
+          set -euxo pipefail
+          gradle --version
+          gradle clean --no-daemon
 
-      - name: Build Debug .apk (No runtime)
+      - name: Build Debug APK
+        shell: bash
         run: |
-          gradle :app_pojavlauncher:assembleNoruntimeDebug
-          mv app_pojavlauncher/build/outputs/apk/noruntime/debug/app_pojavlauncher-noruntime-debug.apk out/app-debug-noruntime.apk
-      - name: Build Nightly Release .apk
+          set -euxo pipefail
+
+          gradle :app_pojavlauncher:assembleFullDebug --no-daemon
+
+          APK="app_pojavlauncher/build/outputs/apk/full/debug/app_pojavlauncher-full-debug.apk"
+
+          test -f "$APK"
+          cp "$APK" out/app-debug-full.apk
+
+      - name: Build Debug APK (No runtime)
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          gradle :app_pojavlauncher:assembleNoruntimeDebug --no-daemon
+
+          APK="app_pojavlauncher/build/outputs/apk/noruntime/debug/app_pojavlauncher-noruntime-debug.apk"
+
+          test -f "$APK"
+          cp "$APK" out/app-debug-noruntime.apk
+
+      - name: Build Publishing AAB
         if: github.repository_owner == 'MojoLauncher' && github.ref_name == 'v3_openjdk'
+        shell: bash
         run: |
-          gradle :app_pojavlauncher:assembleFullPubRelease
-          mv app_pojavlauncher/build/outputs/apk/full/pubRelease/app_pojavlauncher-full-pubRelease.apk out/MojoLauncher-release.apk
-      - name: Gen md5sums
+          set -euxo pipefail
+
+          gradle :app_pojavlauncher:bundleFullGplay --no-daemon
+
+          AAB="app_pojavlauncher/build/outputs/bundle/fullGplay/app_pojavlauncher-full-gplay.aab"
+
+          test -f "$AAB"
+          cp "$AAB" out/app-gplay.aab
+
+      - name: Build Nightly Release APK
+        if: github.repository_owner == 'MojoLauncher' && github.ref_name == 'v3_openjdk'
+        shell: bash
         run: |
+          set -euxo pipefail
+
+          gradle :app_pojavlauncher:assembleFullPubRelease --no-daemon
+
+          APK="app_pojavlauncher/build/outputs/apk/full/pubRelease/app_pojavlauncher-full-pubRelease.apk"
+
+          test -f "$APK"
+          cp "$APK" out/MojoLauncher-release.apk
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          set -euxo pipefail
+
           md5sum out/app-debug-full.apk > out/app-debug-full.md5
           md5sum out/app-debug-noruntime.apk > out/app-debug-noruntime.md5
+
+          if [ -f out/app-gplay.aab ]; then
+            md5sum out/app-gplay.aab > out/app-gplay.md5
+          fi
+
+          if [ -f out/MojoLauncher-release.apk ]; then
+            md5sum out/MojoLauncher-release.apk > out/MojoLauncher-release.md5
+          fi
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: out/app-debug-full.apk
+          path: |
+            out/app-debug-full.apk
+            out/app-debug-full.md5
+          if-no-files-found: error
 
       - name: Upload Debug APK (No runtime)
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-noruntime
-          path: out/app-debug-noruntime.apk
+          path: |
+            out/app-debug-noruntime.apk
+            out/app-debug-noruntime.md5
+          if-no-files-found: error
+
+      - name: Upload AAB
+        if: ${{ hashFiles('out/app-gplay.aab') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: |
+            out/app-gplay.aab
+            out/app-gplay.md5
+          if-no-files-found: error
 
       - name: Release Nightly APK
         if: github.repository_owner == 'MojoLauncher' && github.ref_name == 'v3_openjdk'
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v2
         with:
           name: MojoLauncher Nightly Builds
           prerelease: true
@@ -132,15 +279,9 @@ jobs:
             Commit hash: ${{ github.sha }}
           files: |
             out/MojoLauncher-release.apk
+            out/MojoLauncher-release.md5
 
-      - name: Upload AAB
-        if: ${{ hashFiles('out/app-gplay.aab') != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-aab
-          path: out/app-gplay.aab
-
-      - name: Upload onto the Google Play testing track
+      - name: Upload onto Google Play testing track
         continue-on-error: true
         if: github.repository_owner == 'MojoLauncher' && github.ref_name == 'v3_openjdk'
         uses: r0adkll/upload-google-play@v1.1.5
