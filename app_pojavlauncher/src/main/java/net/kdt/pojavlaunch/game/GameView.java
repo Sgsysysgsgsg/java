@@ -214,6 +214,17 @@ public class GameView extends FrameLayout implements PlatformGrabListener, Surfa
         if(eventKeycode == KeyEvent.KEYCODE_VOLUME_UP) return false;
         if(event.getRepeatCount() != 0) return true;
         int action = event.getAction();
+
+        // When a physical/launcher key starts Minecraft text entry, open the
+        // Android IME automatically. TouchController can keep its clean UI
+        // without a permanent keyboard button.
+        if(action == KeyEvent.ACTION_DOWN &&
+                (eventKeycode == KeyEvent.KEYCODE_T ||
+                 eventKeycode == KeyEvent.KEYCODE_SLASH ||
+                 eventKeycode == KeyEvent.KEYCODE_NUMPAD_DIVIDE)) {
+            Tools.runOnUiThread(() -> GameActivity.switchKeyboardState(false));
+        }
+
         if(action == KeyEvent.ACTION_MULTIPLE) return true;
         // Ignore the cancelled up events. They occur when the user switches layouts.
         // In accordance with https://developer.android.com/reference/android/view/KeyEvent#FLAG_CANCELED
