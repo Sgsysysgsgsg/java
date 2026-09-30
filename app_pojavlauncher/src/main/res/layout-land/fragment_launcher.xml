@@ -111,7 +111,7 @@
         android:layout_height="@dimen/_34sdp"
         android:layout_marginEnd="@dimen/_8sdp"
         android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/mcl_button_edit_profile"
+        android:contentDescription="@string/app_short_name"
         android:src="@drawable/ic_px_edit"
         app:layout_constraintBottom_toBottomOf="@id/mc_version_spinner"
         app:layout_constraintEnd_toStartOf="@id/play_button"
