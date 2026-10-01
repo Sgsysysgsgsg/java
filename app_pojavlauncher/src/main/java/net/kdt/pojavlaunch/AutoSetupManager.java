@@ -9,7 +9,6 @@ import net.kdt.pojavlaunch.downloader.Downloader;
 import net.kdt.pojavlaunch.downloader.TaskMetadata;
 import net.kdt.pojavlaunch.instances.Instance;
 import net.kdt.pojavlaunch.instances.InstanceInstaller;
-import net.kdt.pojavlaunch.instances.InstanceSetter;
 import net.kdt.pojavlaunch.instances.Instances;
 import net.kdt.pojavlaunch.mirrors.DownloadMirror;
 import net.kdt.pojavlaunch.modloaders.FabricVersion;
@@ -178,28 +177,6 @@ public final class AutoSetupManager {
 
     private static void notifyStage(Callback callback, String stage) {
         Tools.runOnUiThread(() -> callback.onStage(stage));
-    }
-
-    private static String installFabric(String minecraftVersion) throws IOException {
-        FabricVersion[] versions = FabriclikeUtils.FABRIC_UTILS.downloadLoaderVersions(minecraftVersion);
-        if (versions == null || versions.length == 0) {
-            throw new IOException("Fabric is not available for Minecraft " + minecraftVersion);
-        }
-
-        String selected = null;
-        for (FabricVersion version : versions) {
-            if (version.stable) {
-                selected = version.version;
-                break;
-            }
-        }
-        if (selected == null) selected = versions[0].version;
-
-        String installedId = FabriclikeUtils.FABRIC_UTILS.install(minecraftVersion, selected);
-        if (installedId == null) {
-            throw new IOException("Failed to install Fabric " + selected);
-        }
-        return installedId;
     }
 
     private static void downloadGame(Context context, String fabricVersion)
