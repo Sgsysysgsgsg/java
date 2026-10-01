@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 public final class AutoSetupManager {
         private static final String MOD_MENU_PROJECT = "modmenu";
+    private static final String TOUCH_CONTROLLER_PROJECT = "touchcontroller";
 
     private AutoSetupManager() {}
 
@@ -95,7 +96,7 @@ public final class AutoSetupManager {
                 downloadGame(context, loaderVersion);
 
                 notifyStage(callback, "Installing compatible Mod Menu and dependencies…");
-                int installed = installModMenu(instance, minecraftVersion, selectedLoader);
+                int installed = installTouchControllerAndModMenu(instance, minecraftVersion, selectedLoader);
 
                 Tools.runOnUiThread(() -> callback.onSuccess(finalProfileName, minecraftVersion, installed));
             } catch (Throwable error) {
@@ -209,12 +210,18 @@ public final class AutoSetupManager {
         }
     }
 
-    private static int installModMenu(Instance instance, String minecraftVersion, String loader)
+    private static int installTouchControllerAndModMenu(Instance instance, String minecraftVersion, String loader)
             throws IOException, InterruptedException {
         File modsDir = new File(instance.getGameDirectory(), "mods");
         FileUtils.ensureDirectory(modsDir);
 
         List<JsonObject> roots = new ArrayList<>();
+
+        JsonObject touchController = getBestProjectVersion(TOUCH_CONTROLLER_PROJECT, minecraftVersion, loader);
+        if (touchController == null) {
+            throw new IOException("No compatible TouchController build was found for Minecraft " + minecraftVersion + " (" + loader + ").");
+        }
+        roots.add(touchController);
 
         JsonObject modMenu = getBestProjectVersion(MOD_MENU_PROJECT, minecraftVersion, loader);
         if (modMenu == null) {
