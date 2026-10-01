@@ -525,9 +525,9 @@
     <string name="auto_setup_title">Auto Setup</string>
     <string name="mods_title">Mods</string>
     <string name="auto_setup_choose_version">Choose your Minecraft version</string>
-    <string name="auto_setup_fabric">Fabric • automatic TouchController setup</string>
+    <string name="auto_setup_fabric">Fabric • automatic EYAD Touch Controls setup</string>
     <string name="auto_setup_working">Setting up Minecraft…</string>
-    <string name="auto_setup_success">Setup complete. Fabric and TouchController are ready for %1$s.</string>
+    <string name="auto_setup_success">Setup complete. Fabric and EYAD Touch Controls are ready for %1$s.</string>
     <string name="auto_setup_failed">Auto Setup failed: %1$s</string>
     <string name="auto_setup_not_supported">TouchController is not available for this Minecraft version.</string>
     <string name="touch_preset_title">Touch controls</string>
