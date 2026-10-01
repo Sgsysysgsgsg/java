@@ -67,7 +67,7 @@ public final class TouchPresetManager {
         try {
             File target = new File(Tools.CTRLDEF_FILE);
             if (target.isDirectory() || !target.exists()) {
-                applyPreset(context, "tab_only");
+                applyPreset(context, "eyad_bedrock");
             }
         } catch (Exception ignored) { }
     }
