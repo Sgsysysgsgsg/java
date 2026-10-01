@@ -62,6 +62,7 @@ public class mcVersionSpinner extends ExtendedTextView {
     private PopupWindow mPopupWindow = null;
     private Object mPopupAnimation;
     private int mSelectedIndex;
+    private Runnable mSelectionChangedListener;
 
     private final InstanceAdapter mProfileAdapter = new InstanceAdapter(new InstanceAdapterExtra[]{
             new InstanceAdapterExtra(VERSION_SPINNER_PROFILE_CREATE,
@@ -74,6 +75,12 @@ public class mcVersionSpinner extends ExtendedTextView {
     public void setProfileSelection(int position){
         setSelection(position);
         Instances.setSelectedInstance((DisplayInstance) mProfileAdapter.getItem(position));
+        if (mSelectionChangedListener != null) mSelectionChangedListener.run();
+    }
+
+    /** Called whenever the user selects a different Minecraft profile. */
+    public void setSelectionChangedListener(Runnable listener) {
+        mSelectionChangedListener = listener;
     }
 
     public void setSelection(int position){
