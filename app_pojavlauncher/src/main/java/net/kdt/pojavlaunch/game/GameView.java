@@ -397,11 +397,7 @@ public class GameView extends FrameLayout implements PlatformGrabListener, Surfa
             mLastGrabState = isGrabbing;
             if(getContext() instanceof GameActivity) {
                 GameActivity activity = (GameActivity) getContext();
-                if(isGrabbing) {
-                    activity.setInventoryUtilityOpen(false);
-                } else {
-                    activity.updateUtilityControls();
-                }
+                activity.updateUtilityControls();
             }
         }
     }
