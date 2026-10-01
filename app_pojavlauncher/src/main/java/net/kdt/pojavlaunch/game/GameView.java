@@ -116,6 +116,15 @@ public class GameView extends FrameLayout implements PlatformGrabListener, Surfa
     @Override
     @SuppressWarnings("accessibility")
     public boolean onTouchEvent(MotionEvent e) {
+        // Forward the raw Android multi-touch stream to TouchController before
+        // the normal GoLauncher/Pojav touch processor handles it.
+        if (getContext() instanceof GameActivity) {
+            GameActivity activity = (GameActivity) getContext();
+            if (activity.mTouchControllerBridge != null) {
+                activity.mTouchControllerBridge.dispatchTouchEvent(e, getWidth(), getHeight());
+            }
+        }
+
         // Kinda need to send this back to the layout
         if(((ControlLayout)getParent()).getModifiable()) return false;
         // Looking for a mouse to handle, won't have an effect if no mouse exists.
