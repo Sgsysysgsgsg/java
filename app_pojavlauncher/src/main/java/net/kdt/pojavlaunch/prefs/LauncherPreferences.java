@@ -162,10 +162,12 @@ public class LauncherPreferences {
         // Limit the max for 32 bits devices more harshly
         if (is32BitsDevice()) return 696;
 
-        if (deviceRam < 3064) return 936;
-        if (deviceRam < 4096) return 1144;
-        if (deviceRam < 6144) return 1536;
-        return 2048; //Default RAM allocation for 64 bits
+        if (deviceRam < 3064) return 1024;
+        if (deviceRam < 4096) return 1536;
+        if (deviceRam < 6144) return 2048;
+        if (deviceRam < 8192) return 2304;
+        if (deviceRam < 12288) return 2560;
+        return 3072; // Keep headroom for Android while giving modern Minecraft enough heap
     }
 
     /// Find a correct resolution for the device
