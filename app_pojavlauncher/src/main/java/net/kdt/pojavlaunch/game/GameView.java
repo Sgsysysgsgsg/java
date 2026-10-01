@@ -36,6 +36,7 @@ import net.kdt.pojavlaunch.render.SurfaceProvider;
 import net.kdt.pojavlaunch.render.SurfaceViewSurfaceProvider;
 import net.kdt.pojavlaunch.render.TextureViewSurfaceProvider;
 import net.kdt.pojavlaunch.utils.MCOptionUtils;
+import net.kdt.pojavlaunch.utils.GoLauncherPerformance;
 
 import git.artdeell.mojo.R;
 import git.artdeell.mojoexec.MojoExec;
@@ -329,16 +330,15 @@ public class GameView extends FrameLayout implements PlatformGrabListener, Surfa
      * stronger devices at a comfortable 60 FPS.
      */
     private void applyLightweightGameOptions() {
-        int ramMb = Tools.getTotalDeviceMemory(getContext());
-        int cores = Runtime.getRuntime().availableProcessors();
-        boolean weakDevice = ramMb <= 4096 || cores <= 6;
+        GoLauncherPerformance.Tier tier = GoLauncherPerformance.getTier(getContext());
 
-        int renderDistance = weakDevice ? 6 : 8;
-        int simulationDistance = weakDevice ? 5 : 6;
-        int maxFps = weakDevice ? 30 : 60;
-        String particles = weakDevice ? "2" : "1";
-        String entityDistance = weakDevice ? "0.5" : "0.75";
-        String biomeBlend = weakDevice ? "0" : "1";
+        int renderDistance = GoLauncherPerformance.defaultRenderDistance(getContext());
+        int simulationDistance = GoLauncherPerformance.defaultSimulationDistance(getContext());
+        int maxFps = GoLauncherPerformance.defaultMaxFps(getContext());
+        String particles = tier == GoLauncherPerformance.Tier.LOW ? "2" : "1";
+        String entityDistance = tier == GoLauncherPerformance.Tier.LOW ? "0.5"
+                : tier == GoLauncherPerformance.Tier.HIGH ? "1.0" : "0.75";
+        String biomeBlend = tier == GoLauncherPerformance.Tier.LOW ? "0" : "1";
 
         MCOptionUtils.set("graphicsMode", "0");
         MCOptionUtils.set("renderDistance", String.valueOf(renderDistance));
@@ -350,11 +350,15 @@ public class GameView extends FrameLayout implements PlatformGrabListener, Surfa
         MCOptionUtils.set("entityDistanceScaling", entityDistance);
         MCOptionUtils.set("entityShadows", "false");
         MCOptionUtils.set("biomeBlendRadius", biomeBlend);
-        MCOptionUtils.set("mipmapLevels", weakDevice ? "1" : "2");
+        MCOptionUtils.set("mipmapLevels", String.valueOf(
+                GoLauncherPerformance.defaultMipmapLevels(getContext())));
 
-        Log.i("GoLauncherPerformance", "Applied lightweight Minecraft profile: weak="
-                + weakDevice + ", RAM=" + ramMb + "MB, cores=" + cores
-                + ", renderDistance=" + renderDistance + ", maxFps=" + maxFps);
+        Log.i("GoLauncherPerformance", "Applied profile: tier=" + tier
+                + ", RAM=" + Tools.getTotalDeviceMemory(getContext()) + "MB"
+                + ", cores=" + Runtime.getRuntime().availableProcessors()
+                + ", renderDistance=" + renderDistance
+                + ", simulationDistance=" + simulationDistance
+                + ", maxFps=" + maxFps);
     }
 
     private void realStart(){
