@@ -160,16 +160,11 @@ public final class AutoSetupManager {
 
         List<JsonObject> roots = new ArrayList<>();
 
-        JsonObject controller = getBestProjectVersion(
-                TOUCH_CONTROLLER_PROJECT, minecraftVersion, "fabric");
-        if (controller == null) {
-            throw new IOException("TouchController does not support Minecraft " + minecraftVersion
-                    + " on Fabric.");
-        }
-        roots.add(controller);
-
         JsonObject modMenu = getBestProjectVersion(MOD_MENU_PROJECT, minecraftVersion, "fabric");
-        if (modMenu != null) roots.add(modMenu);
+        if (modMenu == null) {
+            throw new IOException("No compatible Mod Menu version was found for Minecraft " + minecraftVersion);
+        }
+        roots.add(modMenu);
 
         List<JsonObject> resolved = resolveRequiredDependencies(roots, minecraftVersion, "fabric");
         return downloadModFiles(resolved, modsDir);
