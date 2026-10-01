@@ -95,8 +95,16 @@ public final class AutoSetupManager {
                 notifyStage(callback, "Downloading Minecraft files…");
                 downloadGame(context, loaderVersion);
 
-                notifyStage(callback, "Installing compatible Mod Menu and dependencies…");
+                notifyStage(callback, "Checking TouchController compatibility…");
                 int installed = installTouchControllerAndModMenu(instance, minecraftVersion, selectedLoader);
+
+                boolean touchControllerInstalled = hasTouchControllerJar(instance);
+                if (touchControllerInstalled) {
+                    notifyStage(callback, "TouchController is available for " + minecraftVersion + " — enabling it…");
+                } else {
+                    notifyStage(callback, "TouchController is not available for " + minecraftVersion
+                            + " — using your GoLauncher Custom Controls instead.");
+                }
 
                 Tools.runOnUiThread(() -> callback.onSuccess(finalProfileName, minecraftVersion, installed));
             } catch (Throwable error) {
@@ -208,6 +216,16 @@ public final class AutoSetupManager {
             if (failure[0] instanceof IOException) throw (IOException) failure[0];
             throw new IOException("Minecraft download failed", failure[0]);
         }
+    }
+
+    private static boolean hasTouchControllerJar(Instance instance) {
+        File modsDir = new File(instance.getGameDirectory(), "mods");
+        File[] files = modsDir.listFiles((dir, name) -> {
+            String lower = name.toLowerCase(java.util.Locale.ROOT);
+            return lower.endsWith(".jar")
+                    && (lower.contains("touchcontroller") || lower.contains("touch-controller"));
+        });
+        return files != null && files.length > 0;
     }
 
     private static int installTouchControllerAndModMenu(Instance instance, String minecraftVersion, String loader)
