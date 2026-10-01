@@ -144,7 +144,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         // Start the service a bit early
         ContextCompat.startForegroundService(this, gameServiceIntent);
         initLayout(R.layout.activity_basemain);
-        initTouchControllerProxy();
+        // EYAD uses the launcher-native touch engine; no external TouchController proxy is required.
 
         Platform.initialize(this, launcherGLView);
 
@@ -327,11 +327,10 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     }
 
     private void loadControls() {
-        // TouchController owns movement/aim/attack. Keep a tiny launcher overlay only
-        // for essential utility keys that TouchController does not expose reliably:
-        // TAB, F5, Android keyboard, inventory (E), and a menu BACK/ESC key.
+        // EYAD native Bedrock-style touch engine: movement, aim, attack/use and utility controls
+        // are all rendered by the launcher and do not depend on a Minecraft mod.
         try {
-            TouchPresetManager.applyPreset(this, "utility");
+            TouchPresetManager.applyPreset(this, "eyad_bedrock");
             mControlLayout.loadLayout(LauncherPreferences.PREF_DEFAULTCTRL_PATH);
             mControlLayout.setControlVisible(true);
             updateUtilityControls();
