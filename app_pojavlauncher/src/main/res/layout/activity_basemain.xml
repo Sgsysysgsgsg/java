@@ -1,18 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<top.fifthlight.touchcontroller.proxy.client.android.TouchControllerLayout
+<androidx.drawerlayout.widget.DrawerLayout
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:app="http://schemas.android.com/apk/res-auto"
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_height="match_parent"
 	android:layout_width="match_parent"
-	android:id="@+id/touch_controller_root"
-	android:keepScreenOn="true">
+	android:id="@+id/main_drawer_options"
+	android:background="@drawable/no_focus_shown">
 
-	<androidx.drawerlayout.widget.DrawerLayout
-		android:layout_height="match_parent"
-		android:layout_width="match_parent"
-		android:id="@+id/main_drawer_options"
-		android:background="@drawable/no_focus_shown">
 
 	<FrameLayout
 		android:id="@+id/content_frame"
@@ -128,5 +123,4 @@
 		android:paddingBottom="18dp"
 		android:fitsSystemWindows="false"
 		android:id="@+id/main_navigation_view"/>
-	</androidx.drawerlayout.widget.DrawerLayout>
-</top.fifthlight.touchcontroller.proxy.client.android.TouchControllerLayout>
+</androidx.drawerlayout.widget.DrawerLayout>
