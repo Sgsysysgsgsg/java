@@ -52,6 +52,7 @@ public class MainMenuFragment extends Fragment {
         ImageButton mEditProfileButton = view.findViewById(R.id.edit_profile_button);
         Button mPlayButton = view.findViewById(R.id.play_button);
         mVersionSpinner = view.findViewById(R.id.mc_version_spinner);
+        mVersionSpinner.setSelectionChangedListener(() -> updateModsButtonVisibility(mModsButton));
 
         mAutoSetupButton.setOnClickListener(v -> openAutoSetup(v.getContext()));
 
