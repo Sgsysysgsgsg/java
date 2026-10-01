@@ -310,10 +310,17 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         try {
             boolean touchControllerInstalled = hasTouchControllerInstalled();
             File controlFile = new File(LauncherPreferences.PREF_DEFAULTCTRL_PATH);
+            String savedPreset = LauncherPreferences.DEFAULT_PREF.getString("touch_control_preset", "");
 
+            // TouchController owns movement/aim. If the current layout is one of
+            // GoLauncher's built-in presets, migrate it to the minimal utility layer.
+            // A user-created Custom Controls layout is never overwritten.
             if (!controlFile.isFile()) {
                 TouchPresetManager.applyPreset(this,
                         touchControllerInstalled ? "utility" : "eyad_bedrock");
+            } else if (touchControllerInstalled
+                    && ("eyad_bedrock".equals(savedPreset) || "utility".equals(savedPreset))) {
+                TouchPresetManager.applyPreset(this, "utility");
             }
 
             mControlLayout.loadLayout(LauncherPreferences.PREF_DEFAULTCTRL_PATH);
@@ -347,24 +354,37 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
 
         boolean changed = false;
 
+        // Remove controls that are redundant when TouchController owns gameplay.
+        // Only remove the known GoLauncher built-in gameplay/menu controls.
+        String[] redundantControls = {"JUMP", "USE", "ATTACK", "SNEAK", "SPRINT", "F5",
+                "Move", "AIM", "TAB", "Chat", "Command"};
+        for (String name : redundantControls) {
+            for (int i = layout.mControlDataList.size() - 1; i >= 0; i--) {
+                if (name.equals(layout.mControlDataList.get(i).name)) {
+                    layout.mControlDataList.remove(i);
+                    changed = true;
+                }
+            }
+        }
+
         if (!hasControlNamed(layout, "INV")) {
             mControlLayout.addControlButton(new ControlData(
-                    "INV", new int[]{KeyEvent.KEYCODE_E}, "${right} - ${margin} * 2 - 58",
-                    "${bottom} - ${margin} * 2 - 58", 58, 58, false));
+                    "INV", new int[]{KeyEvent.KEYCODE_E}, "${right} - ${margin} * 2 - 116",
+                    "${margin}", 58, 42, false));
             changed = true;
         }
 
         if (!hasControlNamed(layout, "BACK")) {
             mControlLayout.addControlButton(new ControlData(
-                    "BACK", new int[]{KeyEvent.KEYCODE_ESCAPE}, "${right} - ${margin} * 2 - 122",
-                    "${bottom} - ${margin} * 2 - 58", 58, 58, false));
+                    "BACK", new int[]{KeyEvent.KEYCODE_ESCAPE}, "${right} - ${margin} * 2 - 58",
+                    "${margin}", 58, 42, false));
             changed = true;
         }
 
         if (!hasControlNamed(layout, "Keyboard")) {
             mControlLayout.addControlButton(new ControlData(
                     "Keyboard", new int[]{ControlData.SPECIALBTN_KEYBOARD},
-                    "${margin}", "${margin}", 86, 42, false));
+                    "${margin}", "${margin}", 82, 42, false));
             changed = true;
         }
 
@@ -408,9 +428,11 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         if (mControlLayout == null) return;
         boolean inGame = Platform.isGrabbing();
 
-        // Keep the utility layer simple and reliable:
-        // gameplay -> inventory, GUI/menu -> back + keyboard.
-        // This works with TouchController and with the GoLauncher fallback.
+        // TouchController handles movement/aim. GoLauncher only exposes:
+        // gameplay -> INV
+        // GUI/menu -> BACK + Keyboard
+        // Keyboard remains available on Minecraft GUI screens such as login/chat
+        // where a text field may be active.
         mControlLayout.setNamedControlVisible("INV", inGame);
         mControlLayout.setNamedControlVisible("BACK", !inGame);
         mControlLayout.setNamedControlVisible("Keyboard", !inGame);
