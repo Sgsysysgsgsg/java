@@ -343,10 +343,13 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     public void updateUtilityControls() {
         if (mControlLayout == null) return;
         boolean inGame = Platform.isGrabbing();
-        boolean inventoryOpen = mInventoryUtilityOpen;
-        mControlLayout.setNamedControlVisible("INV", inGame && !inventoryOpen);
-        mControlLayout.setNamedControlVisible("BACK", inventoryOpen);
-        mControlLayout.setNamedControlVisible("Keyboard", !inGame && !inventoryOpen);
+
+        // Keep the utility layer simple and reliable:
+        // gameplay -> inventory, GUI/menu -> back + keyboard.
+        // This works with TouchController and with the GoLauncher fallback.
+        mControlLayout.setNamedControlVisible("INV", inGame);
+        mControlLayout.setNamedControlVisible("BACK", !inGame);
+        mControlLayout.setNamedControlVisible("Keyboard", !inGame);
     }
 
     /** Called by the utility controls/GameView when the inventory is opened or closed. */
