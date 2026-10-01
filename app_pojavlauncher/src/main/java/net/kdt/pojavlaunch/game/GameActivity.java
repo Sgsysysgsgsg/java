@@ -306,7 +306,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         // EYAD native Bedrock-style touch engine: movement, aim, attack/use and utility controls
         // are all rendered by the launcher and do not depend on a Minecraft mod.
         try {
-            TouchPresetManager.applyPreset(this, "eyad_bedrock");
+            TouchPresetManager.applyPreset(this, "utility");
             mControlLayout.loadLayout(LauncherPreferences.PREF_DEFAULTCTRL_PATH);
             mControlLayout.setControlVisible(true);
             updateUtilityControls();
