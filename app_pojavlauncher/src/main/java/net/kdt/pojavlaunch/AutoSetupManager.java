@@ -8,11 +8,13 @@ import com.google.gson.JsonObject;
 import net.kdt.pojavlaunch.downloader.Downloader;
 import net.kdt.pojavlaunch.downloader.TaskMetadata;
 import net.kdt.pojavlaunch.instances.Instance;
+import net.kdt.pojavlaunch.instances.InstanceInstaller;
 import net.kdt.pojavlaunch.instances.InstanceSetter;
 import net.kdt.pojavlaunch.instances.Instances;
 import net.kdt.pojavlaunch.mirrors.DownloadMirror;
 import net.kdt.pojavlaunch.modloaders.FabricVersion;
 import net.kdt.pojavlaunch.modloaders.FabriclikeUtils;
+import net.kdt.pojavlaunch.modloaders.ForgelikeUtils;
 import net.kdt.pojavlaunch.modloaders.modpacks.api.ApiHandler;
 import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
 import net.kdt.pojavlaunch.tasks.MoJsonDownloader;
@@ -42,7 +44,8 @@ public final class AutoSetupManager {
         void onError(Throwable error);
     }
 
-    public static void setup(Context context, String minecraftVersion, String profileName, Callback callback) {
+    public static void setup(Context context, String minecraftVersion, String profileName,
+                              String setupType, String loader, Callback callback) {
         PojavApplication.sExecutorService.execute(() -> {
             try {
                 if (net.kdt.pojavlaunch.authenticator.accounts.Accounts.getCurrent() == null) {
@@ -52,49 +55,125 @@ public final class AutoSetupManager {
                     throw new IOException("Another download is already running. Please wait for it to finish.");
                 }
 
-                notifyStage(callback, "Installing Fabric Loader…");
-                String fabricVersion = installFabric(minecraftVersion);
-
                 String safeProfileName = profileName == null ? "" : profileName.trim();
-                if (safeProfileName.isEmpty()) safeProfileName = "EYAD-Touch-" + minecraftVersion;
-
+                if (safeProfileName.isEmpty()) safeProfileName = "EYAD-" + minecraftVersion;
                 final String finalProfileName = safeProfileName;
-                Instance instance = Instances.createInstance(new InstanceSetter() {
-                    @Override
-                    public void setInstanceProperties(Instance target) {
-                        target.sharedData = false;
-                        target.versionId = fabricVersion;
-                        target.minecraftVersion = minecraftVersion;
-                        target.modLoader = "fabric";
-                    }
-                }, finalProfileName);
+                final String selectedLoader = loader == null ? "vanilla" : loader.toLowerCase();
+                final boolean modded = "modded".equalsIgnoreCase(setupType);
 
-                // Always use our known-good default Bedrock-style control layout.
-                instance.controlLayout = null;
-                instance.maybeWrite();
-                Instances.setSelectedInstance(instance);
-
-                // Verify the selection is immediately readable before starting downloads.
-                Instance selectedNow = Instances.loadSelectedInstance();
-                if (selectedNow == null ||
-                        !instance.getGameDirectory().getAbsolutePath().equals(selectedNow.getGameDirectory().getAbsolutePath())) {
-                    throw new IOException("The new Minecraft instance could not be selected. Please try Auto Setup again.");
+                if (!modded) {
+                    notifyStage(callback, "Preparing Vanilla Minecraft…");
+                    Instance instance = createInstance(minecraftVersion, minecraftVersion, "vanilla", finalProfileName, null);
+                    notifyStage(callback, "Downloading Minecraft files…");
+                    downloadGame(context, minecraftVersion);
+                    verifySelectedInstance(instance);
+                    Tools.runOnUiThread(() -> callback.onSuccess(finalProfileName, minecraftVersion, 0));
+                    return;
                 }
 
+                if ("forge".equals(selectedLoader) || "neoforge".equals(selectedLoader)) {
+                    notifyStage(callback, "Preparing " + selectedLoader + " installer…");
+                    Instance instance = installForgeLike(minecraftVersion, selectedLoader, finalProfileName);
+                    verifySelectedInstance(instance);
+                    // Forge/NeoForge installers perform their own game/library installation.
+                    // Start the existing launcher installer flow rather than duplicating it here.
+                    if (instance.installer != null) instance.installer.start();
+                    notifyStage(callback, selectedLoader + " installer started…");
+                    Tools.runOnUiThread(() -> callback.onSuccess(finalProfileName, minecraftVersion, 0));
+                    return;
+                }
+
+                if (!"fabric".equals(selectedLoader) && !"quilt".equals(selectedLoader)) {
+                    throw new IOException("Unsupported mod loader: " + selectedLoader);
+                }
+
+                notifyStage(callback, "Installing " + selectedLoader + " Loader…");
+                String loaderVersion = installFabricLike(minecraftVersion, selectedLoader);
+                Instance instance = createInstance(loaderVersion, minecraftVersion, selectedLoader, finalProfileName, null);
+                verifySelectedInstance(instance);
+
                 notifyStage(callback, "Downloading Minecraft files…");
-                downloadGame(context, fabricVersion);
+                downloadGame(context, loaderVersion);
 
-                notifyStage(callback, "Installing compatible Mod Menu…");
-                int installed = installModMenu(instance, minecraftVersion);
+                notifyStage(callback, "Installing compatible Mod Menu and dependencies…");
+                int installed = installModMenu(instance, minecraftVersion, selectedLoader);
 
-                final String installedProfileName = finalProfileName;
-                Tools.runOnUiThread(() -> callback.onSuccess(
-                        installedProfileName, minecraftVersion, installed
-                ));
+                Tools.runOnUiThread(() -> callback.onSuccess(finalProfileName, minecraftVersion, installed));
             } catch (Throwable error) {
                 Tools.runOnUiThread(() -> callback.onError(error));
             }
         });
+    }
+
+    /** Backward-compatible entry point: creates the normal Fabric modded profile. */
+    public static void setup(Context context, String minecraftVersion, String profileName, Callback callback) {
+        setup(context, minecraftVersion, profileName, "modded", "fabric", callback);
+    }
+
+    private static Instance createInstance(String versionId, String minecraftVersion, String loader,
+                                           String profileName, InstanceInstaller installer) {
+        Instance instance = Instances.createInstance(target -> {
+            target.sharedData = false;
+            target.versionId = versionId;
+            target.minecraftVersion = minecraftVersion;
+            target.modLoader = loader;
+            target.installer = installer;
+        }, profileName);
+        instance.controlLayout = null;
+        instance.maybeWrite();
+        Instances.setSelectedInstance(instance);
+        return instance;
+    }
+
+    private static void verifySelectedInstance(Instance instance) throws IOException {
+        Instance selectedNow = Instances.loadSelectedInstance();
+        if (selectedNow == null ||
+                !instance.getGameDirectory().getAbsolutePath().equals(selectedNow.getGameDirectory().getAbsolutePath())) {
+            throw new IOException("The new Minecraft instance could not be selected. Please try Auto Setup again.");
+        }
+    }
+
+    private static String installFabricLike(String minecraftVersion, String loader) throws IOException {
+        FabriclikeUtils utils = "quilt".equalsIgnoreCase(loader)
+                ? FabriclikeUtils.QUILT_UTILS : FabriclikeUtils.FABRIC_UTILS;
+        FabricVersion[] versions = utils.downloadLoaderVersions(minecraftVersion);
+        if (versions == null || versions.length == 0) {
+            throw new IOException(utils.getName() + " is not available for Minecraft " + minecraftVersion);
+        }
+        String selected = null;
+        for (FabricVersion version : versions) {
+            if (version.stable) {
+                selected = version.version;
+                break;
+            }
+        }
+        if (selected == null) selected = versions[0].version;
+        String installedId = utils.install(minecraftVersion, selected);
+        if (installedId == null) throw new IOException("Failed to install " + utils.getName() + " " + selected);
+        return installedId;
+    }
+
+    private static Instance installForgeLike(String minecraftVersion, String loader, String profileName)
+            throws IOException {
+        ForgelikeUtils utils = "neoforge".equalsIgnoreCase(loader)
+                ? ForgelikeUtils.NEOFORGE_UTILS : ForgelikeUtils.FORGE_UTILS;
+        List<String> versions = utils.downloadVersions();
+        if (versions == null || versions.isEmpty()) {
+            throw new IOException(utils.getName() + " versions are unavailable right now.");
+        }
+        String selected = null;
+        for (String version : versions) {
+            if (!utils.shouldSkipVersion(version) && minecraftVersion.equals(utils.processVersionString(version))) {
+                selected = version;
+                break;
+            }
+        }
+        if (selected == null) {
+            throw new IOException("No compatible " + utils.getName() + " version was found for Minecraft " + minecraftVersion);
+        }
+        InstanceInstaller installer = utils.createInstaller(selected);
+        if (installer == null) throw new IOException("Failed to prepare " + utils.getName() + " installer.");
+        return createInstance(selected, minecraftVersion, loader, profileName, installer);
     }
 
     private static void notifyStage(Callback callback, String stage) {
@@ -153,20 +232,20 @@ public final class AutoSetupManager {
         }
     }
 
-    private static int installModMenu(Instance instance, String minecraftVersion)
+    private static int installModMenu(Instance instance, String minecraftVersion, String loader)
             throws IOException, InterruptedException {
         File modsDir = new File(instance.getGameDirectory(), "mods");
         FileUtils.ensureDirectory(modsDir);
 
         List<JsonObject> roots = new ArrayList<>();
 
-        JsonObject modMenu = getBestProjectVersion(MOD_MENU_PROJECT, minecraftVersion, "fabric");
+        JsonObject modMenu = getBestProjectVersion(MOD_MENU_PROJECT, minecraftVersion, loader);
         if (modMenu == null) {
             throw new IOException("No compatible Mod Menu version was found for Minecraft " + minecraftVersion);
         }
         roots.add(modMenu);
 
-        List<JsonObject> resolved = resolveRequiredDependencies(roots, minecraftVersion, "fabric");
+        List<JsonObject> resolved = resolveRequiredDependencies(roots, minecraftVersion, loader);
         return downloadModFiles(resolved, modsDir);
     }
 
@@ -258,7 +337,7 @@ public final class AutoSetupManager {
         }
 
         if (tasks.isEmpty()) {
-            throw new IOException("No compatible TouchController/Mod Menu files were found.");
+            throw new IOException("No compatible mod files were found.");
         }
 
         new AutoDownloader().download(tasks);
