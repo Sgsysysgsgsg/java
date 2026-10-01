@@ -180,10 +180,6 @@ public class MainMenuFragment extends Fragment {
                 .show();
     }
 
-    private void startAutoSetup(Context context, String setupType, String loader) {
-        // Kept as a small helper for callers that already have a selected version.
-    }
-
     private void startAutoSetup(Context context, String minecraftVersion, String setupType, String loader) {
         final EditText nameInput = new EditText(context);
         nameInput.setSingleLine(true);
