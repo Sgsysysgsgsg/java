@@ -303,25 +303,89 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     }
 
     private void loadControls() {
-        // TouchController gets priority when a compatible jar is actually installed.
-        // Otherwise GoLauncher provides the complete Bedrock-style control layer.
+        // The user's Custom Controls layout is always the source of truth.
+        // Built-in controls are only created when no control layout exists yet.
+        // TouchController is an optional movement/aim integration; GoLauncher only
+        // adds the small INV/BACK/Keyboard actions when that integration is present.
         try {
             boolean touchControllerInstalled = hasTouchControllerInstalled();
-            String preset = touchControllerInstalled ? "utility" : "eyad_bedrock";
+            File controlFile = new File(LauncherPreferences.PREF_DEFAULTCTRL_PATH);
 
-            TouchPresetManager.applyPreset(this, preset);
+            if (!controlFile.isFile()) {
+                TouchPresetManager.applyPreset(this,
+                        touchControllerInstalled ? "utility" : "eyad_bedrock");
+            }
+
             mControlLayout.loadLayout(LauncherPreferences.PREF_DEFAULTCTRL_PATH);
+
+            if (touchControllerInstalled) {
+                ensureTouchControllerUtilityControls();
+            }
+
             mControlLayout.setControlVisible(true);
             updateUtilityControls();
 
             Log.i("TouchControls", "Control source: "
-                    + (touchControllerInstalled ? "TouchController + GoLauncher utility"
-                    : "GoLauncher built-in fallback"));
+                    + (touchControllerInstalled
+                    ? "Custom Controls + TouchController + GoLauncher actions"
+                    : "Custom Controls + GoLauncher built-in fallback"));
         } catch (Exception error) {
             Log.e("TouchControls", "Failed to load controls", error);
             mControlLayout.setControlVisible(false);
         }
         mDrawerPullButton.setVisibility(View.GONE);
+    }
+
+    /**
+     * Keep the three launcher actions inside the user's actual Custom Controls
+     * layout. They can therefore be moved/resized/edited from the normal editor.
+     * Existing controls are never replaced.
+     */
+    private void ensureTouchControllerUtilityControls() {
+        CustomControls layout = mControlLayout.getLayout();
+        if (layout == null || layout.mControlDataList == null) return;
+
+        boolean changed = false;
+
+        if (!hasControlNamed(layout, "INV")) {
+            mControlLayout.addControlButton(new ControlData(
+                    "INV", new int[]{KeyEvent.KEYCODE_E}, "${right} - ${margin} * 2 - 58",
+                    "${bottom} - ${margin} * 2 - 58", 58, 58, false));
+            changed = true;
+        }
+
+        if (!hasControlNamed(layout, "BACK")) {
+            mControlLayout.addControlButton(new ControlData(
+                    "BACK", new int[]{KeyEvent.KEYCODE_ESCAPE}, "${right} - ${margin} * 2 - 122",
+                    "${bottom} - ${margin} * 2 - 58", 58, 58, false));
+            changed = true;
+        }
+
+        if (!hasControlNamed(layout, "Keyboard")) {
+            mControlLayout.addControlButton(new ControlData(
+                    "Keyboard", new int[]{ControlData.SPECIALBTN_KEYBOARD},
+                    "${margin}", "${margin}", 86, 42, false));
+            changed = true;
+        }
+
+        // Persist the additions so CustomControlsActivity can edit them later.
+        if (changed) {
+            try {
+                mControlLayout.saveLayout(LauncherPreferences.PREF_DEFAULTCTRL_PATH);
+                LauncherPreferences.DEFAULT_PREF.edit()
+                        .putString("defaultCtrl", LauncherPreferences.PREF_DEFAULTCTRL_PATH)
+                        .apply();
+            } catch (Exception error) {
+                Log.w("TouchControls", "Could not persist utility actions", error);
+            }
+        }
+    }
+
+    private boolean hasControlNamed(CustomControls layout, String name) {
+        for (ControlData control : layout.mControlDataList) {
+            if (name.equals(control.name)) return true;
+        }
+        return false;
     }
 
     /** Detect the optional TouchController integration without touching Minecraft APIs. */
