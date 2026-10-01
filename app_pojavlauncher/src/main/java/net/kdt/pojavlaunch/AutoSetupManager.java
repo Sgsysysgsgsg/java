@@ -111,7 +111,7 @@ public final class AutoSetupManager {
     }
 
     private static Instance createInstance(String versionId, String minecraftVersion, String loader,
-                                           String profileName, InstanceInstaller installer) {
+                                           String profileName, InstanceInstaller installer) throws IOException {
         Instance instance = Instances.createInstance(target -> {
             target.sharedData = false;
             target.versionId = versionId;
