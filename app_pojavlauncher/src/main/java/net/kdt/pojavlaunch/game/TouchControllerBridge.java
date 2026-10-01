@@ -33,10 +33,20 @@ public final class TouchControllerBridge implements AutoCloseable {
 
         client.setKeyboardShowHandler(new LauncherProxyClient.KeyboardShowHandler() {
             @Override public void showKeyboard() {
-                activity.runOnUiThread(() -> activity.updateTouchControllerKeyboard(true));
+                activity.runOnUiThread(() -> {
+                    activity.updateTouchControllerKeyboard(true);
+                    if (GameActivity.touchCharInput != null) {
+                        GameActivity.touchCharInput.setKeyboardState(true);
+                    }
+                });
             }
             @Override public void hideKeyboard() {
-                activity.runOnUiThread(() -> activity.updateTouchControllerKeyboard(false));
+                activity.runOnUiThread(() -> {
+                    activity.updateTouchControllerKeyboard(false);
+                    if (GameActivity.touchCharInput != null) {
+                        GameActivity.touchCharInput.setKeyboardState(false);
+                    }
+                });
             }
         });
     }
