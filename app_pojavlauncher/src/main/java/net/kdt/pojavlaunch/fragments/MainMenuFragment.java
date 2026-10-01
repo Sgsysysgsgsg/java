@@ -55,8 +55,12 @@ public class MainMenuFragment extends Fragment {
 
         mAutoSetupButton.setOnClickListener(v -> openAutoSetup(v.getContext()));
 
-        mModsButton.setOnClickListener(v ->
-                Tools.swapFragment(requireActivity(), SearchModFragment.class, SearchModFragment.TAG, null));
+        mModsButton.setOnClickListener(v -> {
+            Instance selected = Instances.loadSelectedInstance();
+            if (selected == null || "vanilla".equalsIgnoreCase(selected.modLoader)) return;
+            Tools.swapFragment(requireActivity(), SearchModFragment.class, SearchModFragment.TAG, null);
+        });
+        updateModsButtonVisibility(mModsButton);
 
         mEditProfileButton.setOnClickListener(v ->
                 mVersionSpinner.openProfileEditor(requireActivity()));
@@ -139,24 +143,58 @@ public class MainMenuFragment extends Fragment {
                 .setTitle(R.string.auto_setup_choose_version)
                 .setItems(labels.toArray(new String[0]), (dialog, which) -> {
                     if (which >= 0 && which < ids.size()) {
-                        startAutoSetup(context, ids.get(which));
+                        chooseSetupType(context, ids.get(which));
                     }
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
     }
 
-    private void startAutoSetup(Context context, String minecraftVersion) {
+    private void chooseSetupType(Context context, String minecraftVersion) {
+        final String[] modes = {"Vanilla Minecraft", "Modded Minecraft"};
+        new AlertDialog.Builder(context)
+                .setTitle("Choose your Minecraft setup")
+                .setItems(modes, (dialog, which) -> {
+                    if (which == 0) {
+                        startAutoSetup(context, minecraftVersion, "vanilla", "vanilla");
+                    } else if (which == 1) {
+                        chooseModLoader(context, minecraftVersion);
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void chooseModLoader(Context context, String minecraftVersion) {
+        final String[] loaders = {"Fabric", "Forge", "NeoForge", "Quilt"};
+        final String[] ids = {"fabric", "forge", "neoforge", "quilt"};
+        new AlertDialog.Builder(context)
+                .setTitle("Choose your mod loader")
+                .setItems(loaders, (dialog, which) -> {
+                    if (which >= 0 && which < ids.length) {
+                        startAutoSetup(context, minecraftVersion, "modded", ids[which]);
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void startAutoSetup(Context context, String setupType, String loader) {
+        // Kept as a small helper for callers that already have a selected version.
+    }
+
+    private void startAutoSetup(Context context, String minecraftVersion, String setupType, String loader) {
         final EditText nameInput = new EditText(context);
         nameInput.setSingleLine(true);
-        nameInput.setHint("Example: Survival Touch");
+        nameInput.setHint("Example: Survival");
         nameInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         int padding = (int) (24 * getResources().getDisplayMetrics().density);
         nameInput.setPadding(padding, 8, padding, 8);
 
         AlertDialog nameDialog = new AlertDialog.Builder(context)
                 .setTitle("Name your profile")
-                .setMessage("Choose a name for this Minecraft setup.")
+                .setMessage(("vanilla".equals(loader) ? "Vanilla Minecraft" : loader + " modded Minecraft")
+                        + " • " + minecraftVersion)
                 .setView(nameInput)
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton("Install", null)
@@ -170,13 +208,14 @@ public class MainMenuFragment extends Fragment {
                     return;
                 }
                 alert.dismiss();
-                runAutoSetup(context, minecraftVersion, profileName);
+                runAutoSetup(context, minecraftVersion, profileName, setupType, loader);
             });
         });
         nameDialog.show();
     }
 
-    private void runAutoSetup(Context context, String minecraftVersion, String profileName) {
+    private void runAutoSetup(Context context, String minecraftVersion, String profileName,
+                              String setupType, String loader) {
         ProgressDialog progress = new ProgressDialog(context);
         progress.setTitle("Auto Setup • " + minecraftVersion);
         progress.setMessage("Preparing…");
@@ -184,7 +223,8 @@ public class MainMenuFragment extends Fragment {
         progress.setCancelable(false);
         progress.show();
 
-        AutoSetupManager.setup(context, minecraftVersion, profileName, new AutoSetupManager.Callback() {
+        AutoSetupManager.setup(context, minecraftVersion, profileName, setupType, loader,
+                new AutoSetupManager.Callback() {
             @Override
             public void onStage(String stage) {
                 if (progress.isShowing()) progress.setMessage(stage);
@@ -193,14 +233,16 @@ public class MainMenuFragment extends Fragment {
             @Override
             public void onSuccess(String profile, String version, int modCount) {
                 if (progress.isShowing()) progress.dismiss();
-                // Reload the instance list immediately; no launcher restart is required.
                 if (mVersionSpinner != null) mVersionSpinner.reloadProfiles();
                 ExtraCore.setValue(ExtraConstants.REFRESH_VERSION_SPINNER, null);
-                Toast.makeText(
-                        context,
-                        "Installed " + version + " • " + profile + " • " + modCount + " mods",
-                        Toast.LENGTH_LONG
-                ).show();
+                View root = getView();
+                if (root != null) updateModsButtonVisibility(root.findViewById(R.id.mods_button));
+                String modeText = "vanilla".equalsIgnoreCase(loader) ? "Vanilla" :
+                        loader.substring(0, 1).toUpperCase() + loader.substring(1) + " Modded";
+                Toast.makeText(context,
+                        "Installed " + version + " • " + profile + " • " + modeText +
+                                (modCount > 0 ? " • " + modCount + " files" : ""),
+                        Toast.LENGTH_LONG).show();
             }
 
             @Override
@@ -214,6 +256,14 @@ public class MainMenuFragment extends Fragment {
                         .show();
             }
         });
+    }
+
+    private void updateModsButtonVisibility(Button button) {
+        if (button == null) return;
+        Instance selected = Instances.loadSelectedInstance();
+        boolean modded = selected != null && selected.modLoader != null
+                && !"vanilla".equalsIgnoreCase(selected.modLoader);
+        button.setVisibility(modded ? View.VISIBLE : View.GONE);
     }
 
     private void openGameDirectory(Context context) {
@@ -234,5 +284,7 @@ public class MainMenuFragment extends Fragment {
     public void onResume() {
         super.onResume();
         ExtraCore.setValue(ExtraConstants.REFRESH_ACCOUNT_SPINNER, true);
+        View root = getView();
+        if (root != null) updateModsButtonVisibility(root.findViewById(R.id.mods_button));
     }
 }
