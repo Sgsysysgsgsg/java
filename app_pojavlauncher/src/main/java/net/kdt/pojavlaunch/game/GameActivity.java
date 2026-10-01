@@ -335,12 +335,12 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
             // TouchController owns movement/aim. If the current layout is one of
             // GoLauncher's built-in presets, migrate it to the minimal utility layer.
             // A user-created Custom Controls layout is never overwritten.
+            // Only create a built-in layout when the player has no saved controls.
+            // Never re-apply a preset just because its original preset name is still stored:
+            // the player may have edited that layout in Custom Controls.
             if (!controlFile.isFile()) {
                 TouchPresetManager.applyPreset(this,
                         touchControllerInstalled ? "utility" : "eyad_bedrock");
-            } else if (touchControllerInstalled
-                    && ("eyad_bedrock".equals(savedPreset) || "utility".equals(savedPreset))) {
-                TouchPresetManager.applyPreset(this, "utility");
             }
 
             mControlLayout.loadLayout(LauncherPreferences.PREF_DEFAULTCTRL_PATH);
