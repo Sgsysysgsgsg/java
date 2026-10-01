@@ -217,17 +217,22 @@ public final class AutoSetupManager {
 
         List<JsonObject> roots = new ArrayList<>();
 
+        // TouchController and Mod Menu are optional integrations.
+        // GoLauncher has a native fallback control layer, so an unavailable
+        // mod must never make Auto Setup fail after Minecraft was downloaded.
         JsonObject touchController = getBestProjectVersion(TOUCH_CONTROLLER_PROJECT, minecraftVersion, loader);
-        if (touchController == null) {
-            throw new IOException("No compatible TouchController build was found for Minecraft " + minecraftVersion + " (" + loader + ").");
+        if (touchController != null) {
+            roots.add(touchController);
         }
-        roots.add(touchController);
 
         JsonObject modMenu = getBestProjectVersion(MOD_MENU_PROJECT, minecraftVersion, loader);
-        if (modMenu == null) {
-            throw new IOException("No compatible Mod Menu version was found for Minecraft " + minecraftVersion);
+        if (modMenu != null) {
+            roots.add(modMenu);
         }
-        roots.add(modMenu);
+
+        if (roots.isEmpty()) {
+            return 0;
+        }
 
         List<JsonObject> resolved = resolveRequiredDependencies(roots, minecraftVersion, loader);
         return downloadModFiles(resolved, modsDir);
