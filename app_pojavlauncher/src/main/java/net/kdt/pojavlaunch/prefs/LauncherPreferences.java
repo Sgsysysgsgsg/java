@@ -16,6 +16,7 @@ import net.kdt.pojavlaunch.*;
 import net.kdt.pojavlaunch.TouchPresetManager;
 import net.kdt.pojavlaunch.multirt.MultiRTUtils;
 import net.kdt.pojavlaunch.utils.GpuUtils;
+import net.kdt.pojavlaunch.utils.GoLauncherPerformance;
 import net.kdt.pojavlaunch.utils.JREUtils;
 
 import java.io.IOException;
@@ -177,7 +178,7 @@ public class LauncherPreferences {
     private static int findBestResolution(Context context, boolean isDevicePowerful) {
         DisplayMetrics metrics = context.getResources().getDisplayMetrics();
         int minSide = Math.min(metrics.widthPixels, metrics.heightPixels);
-        int targetSide = isDevicePowerful ? 1080 : 720;
+        int targetSide = GoLauncherPerformance.defaultResolutionSide(context);
         if (minSide <= targetSide) return 100; // No need to scale down
 
         float ratio = (100f * targetSide / minSide);
@@ -189,13 +190,7 @@ public class LauncherPreferences {
     /// Check if the device is considered powerful.
     /// Powerful devices will have some energy saving tweaks enabled by default
     private static boolean isDevicePowerful(Context context) {
-        if (SDK_INT < Build.VERSION_CODES.Q) return false;
-        if (Tools.getTotalDeviceMemory(context) <= 4096) return false;
-        DisplayMetrics metrics = context.getResources().getDisplayMetrics();
-        if (Math.min(metrics.widthPixels, metrics.heightPixels) < 1080) return false;
-        if (Runtime.getRuntime().availableProcessors() <= 4) return false;
-        if (hasAllCoreSameFreq()) return false;
-        return true;
+        return GoLauncherPerformance.isHigh(context);
     }
 
     private static boolean hasAllCoreSameFreq() {
