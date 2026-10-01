@@ -20,6 +20,7 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.system.Os;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.InputDevice;
@@ -112,6 +113,8 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
 
     private QuickSettingSideDialog mQuickSettingSideDialog;
     private boolean mInventoryUtilityOpen = false;
+    private boolean mTouchControllerKeyboardVisible = false;
+    private TouchControllerBridge mTouchControllerBridge;
     public static int mForcedPanningHeight = 0;
     public static int mImeHeight = 0;
 
@@ -224,6 +227,23 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     protected void initLayout(int resId) {
         setContentView(resId);
         bindValues();
+
+        // TouchController needs a launcher-side IPC bridge on Android. Create it
+        // before Minecraft starts so the mod can connect as soon as its JVM loads.
+        if (hasTouchControllerInstalled()) {
+            try {
+                mTouchControllerBridge = new TouchControllerBridge(this);
+                Os.setenv("TOUCH_CONTROLLER_PROXY_SOCKET",
+                        TouchControllerBridge.SOCKET_NAME, true);
+                mTouchControllerBridge.start();
+                Log.i("TouchControllerBridge", "Android proxy started: "
+                        + TouchControllerBridge.SOCKET_NAME);
+            } catch (Throwable bridgeError) {
+                Log.e("TouchControllerBridge", "Failed to start Android proxy", bridgeError);
+                mTouchControllerBridge = null;
+            }
+        }
+
         mControlLayout.setMenuListener(this);
 
         mDrawerPullButton.setOnClickListener(v -> onClickedMenu());
@@ -430,17 +450,23 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
 
         // TouchController handles movement/aim. GoLauncher only exposes:
         // gameplay -> INV
-        // GUI/menu -> BACK + Keyboard
-        // Keyboard remains available on Minecraft GUI screens such as login/chat
-        // where a text field may be active.
+        // GUI/menu -> BACK
+        // text input -> Keyboard
         mControlLayout.setNamedControlVisible("INV", inGame);
         mControlLayout.setNamedControlVisible("BACK", !inGame);
-        mControlLayout.setNamedControlVisible("Keyboard", !inGame);
+        mControlLayout.setNamedControlVisible("Keyboard",
+                !inGame && mTouchControllerKeyboardVisible);
     }
 
     /** Called by the utility controls/GameView when the inventory is opened or closed. */
     public void setInventoryUtilityOpen(boolean open) {
         mInventoryUtilityOpen = open;
+        updateUtilityControls();
+    }
+
+    /** Called by the TouchController proxy when Minecraft requests text input. */
+    public void updateTouchControllerKeyboard(boolean visible) {
+        mTouchControllerKeyboardVisible = visible;
         updateUtilityControls();
     }
 
@@ -503,6 +529,14 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
 
     @Override
     protected void onDestroy() {
+        if (mTouchControllerBridge != null) {
+            try {
+                mTouchControllerBridge.close();
+            } catch (Throwable ignored) {
+            }
+            mTouchControllerBridge = null;
+        }
+        mTouchControllerKeyboardVisible = false;
         super.onDestroy();
         ContextExecutor.clearActivity();
     }
