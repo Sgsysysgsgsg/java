@@ -303,18 +303,40 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     }
 
     private void loadControls() {
-        // EYAD native Bedrock-style touch engine: movement, aim, attack/use and utility controls
-        // are all rendered by the launcher and do not depend on a Minecraft mod.
+        // TouchController gets priority when a compatible jar is actually installed.
+        // Otherwise GoLauncher provides the complete Bedrock-style control layer.
         try {
-            TouchPresetManager.applyPreset(this, "utility");
+            boolean touchControllerInstalled = hasTouchControllerInstalled();
+            String preset = touchControllerInstalled ? "utility" : "eyad_bedrock";
+
+            TouchPresetManager.applyPreset(this, preset);
             mControlLayout.loadLayout(LauncherPreferences.PREF_DEFAULTCTRL_PATH);
             mControlLayout.setControlVisible(true);
             updateUtilityControls();
+
+            Log.i("TouchControls", "Control source: "
+                    + (touchControllerInstalled ? "TouchController + GoLauncher utility"
+                    : "GoLauncher built-in fallback"));
         } catch (Exception error) {
-            Log.e("TouchControls", "Failed to load utility controls", error);
+            Log.e("TouchControls", "Failed to load controls", error);
             mControlLayout.setControlVisible(false);
         }
         mDrawerPullButton.setVisibility(View.GONE);
+    }
+
+    /** Detect the optional TouchController integration without touching Minecraft APIs. */
+    private boolean hasTouchControllerInstalled() {
+        try {
+            File modsDir = new File(instance.getGameDirectory(), "mods");
+            File[] files = modsDir.listFiles((dir, name) -> {
+                String lower = name.toLowerCase(java.util.Locale.ROOT);
+                return lower.endsWith(".jar")
+                        && (lower.contains("touchcontroller") || lower.contains("touch-controller"));
+            });
+            return files != null && files.length > 0;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     /** Update the small INV/BACK/Keyboard overlay according to the current Minecraft screen. */
