@@ -335,7 +335,7 @@ public class GameView extends FrameLayout implements PlatformGrabListener, Surfa
 
         int renderDistance = weakDevice ? 6 : 8;
         int simulationDistance = weakDevice ? 5 : 6;
-        int maxFps = weakDevice ? 45 : 60;
+        int maxFps = weakDevice ? 30 : 60;
         String particles = weakDevice ? "2" : "1";
         String entityDistance = weakDevice ? "0.5" : "0.75";
         String biomeBlend = weakDevice ? "0" : "1";
@@ -350,9 +350,9 @@ public class GameView extends FrameLayout implements PlatformGrabListener, Surfa
         MCOptionUtils.set("entityDistanceScaling", entityDistance);
         MCOptionUtils.set("entityShadows", "false");
         MCOptionUtils.set("biomeBlendRadius", biomeBlend);
-        MCOptionUtils.set("mipmapLevels", "2");
+        MCOptionUtils.set("mipmapLevels", weakDevice ? "1" : "2");
 
-        Log.i("EYADPerformance", "Applied lightweight Minecraft profile: weak="
+        Log.i("GoLauncherPerformance", "Applied lightweight Minecraft profile: weak="
                 + weakDevice + ", RAM=" + ramMb + "MB, cores=" + cores
                 + ", renderDistance=" + renderDistance + ", maxFps=" + maxFps);
     }
