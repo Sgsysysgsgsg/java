@@ -175,6 +175,20 @@ jobs:
           test -f "$APK"
           cp "$APK" out/app-debug-full.apk
 
+      # Optimized build: R8 + resource shrinking for the lightweight GoLauncher package.
+      # Keep the debug APK above for troubleshooting and development.
+      - name: Build Optimized APK
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          gradle :app_pojavlauncher:assembleFullProguardNoDebug --no-daemon
+
+          APK="app_pojavlauncher/build/outputs/apk/full/proguardNoDebug/app_pojavlauncher-full-proguardNoDebug.apk"
+
+          test -f "$APK"
+          cp "$APK" out/GoLauncher-optimized.apk
+
       - name: Build Debug APK (No runtime)
         shell: bash
         run: |
@@ -220,6 +234,7 @@ jobs:
 
           md5sum out/app-debug-full.apk > out/app-debug-full.md5
           md5sum out/app-debug-noruntime.apk > out/app-debug-noruntime.md5
+          md5sum out/GoLauncher-optimized.apk > out/GoLauncher-optimized.md5
 
           if [ -f out/app-gplay.aab ]; then
             md5sum out/app-gplay.aab > out/app-gplay.md5
@@ -236,6 +251,15 @@ jobs:
           path: |
             out/app-debug-full.apk
             out/app-debug-full.md5
+          if-no-files-found: error
+
+      - name: Upload Optimized APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GoLauncher-optimized
+          path: |
+            out/GoLauncher-optimized.apk
+            out/GoLauncher-optimized.md5
           if-no-files-found: error
 
       - name: Upload Debug APK (No runtime)
