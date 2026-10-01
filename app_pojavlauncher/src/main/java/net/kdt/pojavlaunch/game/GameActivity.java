@@ -114,7 +114,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     private QuickSettingSideDialog mQuickSettingSideDialog;
     private boolean mInventoryUtilityOpen = false;
     private boolean mTouchControllerKeyboardVisible = false;
-    private TouchControllerBridge mTouchControllerBridge;
+    TouchControllerBridge mTouchControllerBridge;
     public static int mForcedPanningHeight = 0;
     public static int mImeHeight = 0;
 
