@@ -10,6 +10,8 @@ import android.text.Editable;
 import android.text.Selection;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
+import android.view.inputmethod.EditorInfo;
+import android.text.InputType;
 import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.NonNull;
@@ -132,6 +134,13 @@ public class TouchCharInput extends androidx.appcompat.widget.AppCompatEditText 
 
     /** This function deals with anything that has to be executed when the constructor is called */
     private void setup(){
+        // Keep command/chat input literal so Android autocorrect does not rewrite Minecraft commands.
+        setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+        setSingleLine(true);
+        setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+
         // Using TextWatcher instead of overriding onTextChanged because some Huawei firmware
         // calls setText in constructor, causing havoc for our listener
         addTextChangedListener(new InputTextWatcher());
