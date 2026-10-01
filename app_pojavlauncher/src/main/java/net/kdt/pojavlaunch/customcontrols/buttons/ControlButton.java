@@ -222,6 +222,16 @@ public class ControlButton extends TextView implements ControlInterface {
                         activity.setInventoryUtilityOpen(true);
                     } else if (keycode == KeyEvent.KEYCODE_ESCAPE) {
                         activity.setInventoryUtilityOpen(false);
+                    } else if (keycode == KeyEvent.KEYCODE_T ||
+                            keycode == KeyEvent.KEYCODE_SLASH ||
+                            keycode == KeyEvent.KEYCODE_NUMPAD_DIVIDE) {
+                        // Give Minecraft a moment to open its chat/command screen,
+                        // then focus the launcher's Android text bridge.
+                        activity.getWindow().getDecorView().postDelayed(() -> {
+                            if (GameActivity.touchCharInput != null) {
+                                GameActivity.toggleKeyboardState(true, 0);
+                            }
+                        }, 140);
                     }
                 }
             }else{
