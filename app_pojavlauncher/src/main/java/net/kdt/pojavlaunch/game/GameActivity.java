@@ -374,10 +374,12 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
 
         boolean changed = false;
 
-        // Remove controls that are redundant when TouchController owns gameplay.
-        // Only remove the known GoLauncher built-in gameplay/menu controls.
+        // TouchController owns gameplay, aim, chat and text-entry interaction.
+        // GoLauncher keeps only the two launcher utility buttons below.
+        // Keyboard is intentionally not a control anymore: the Android IME is
+        // opened automatically when TouchController/game text input requests it.
         String[] redundantControls = {"JUMP", "USE", "ATTACK", "SNEAK", "SPRINT", "F5",
-                "Move", "AIM", "TAB", "Chat", "Command"};
+                "Move", "AIM", "TAB", "Chat", "Command", "Keyboard"};
         for (String name : redundantControls) {
             for (int i = layout.mControlDataList.size() - 1; i >= 0; i--) {
                 if (name.equals(layout.mControlDataList.get(i).name)) {
@@ -398,13 +400,6 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
             mControlLayout.addControlButton(new ControlData(
                     "BACK", new int[]{KeyEvent.KEYCODE_ESCAPE}, "${right} - ${margin} * 2 - 58",
                     "${margin}", 58, 42, false));
-            changed = true;
-        }
-
-        if (!hasControlNamed(layout, "Keyboard")) {
-            mControlLayout.addControlButton(new ControlData(
-                    "Keyboard", new int[]{ControlData.SPECIALBTN_KEYBOARD},
-                    "${margin}", "${margin}", 82, 42, false));
             changed = true;
         }
 
@@ -448,14 +443,11 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         if (mControlLayout == null) return;
         boolean inGame = Platform.isGrabbing();
 
-        // TouchController handles movement/aim. GoLauncher only exposes:
-        // gameplay -> INV
-        // GUI/menu -> BACK
-        // text input -> Keyboard
+        // TouchController handles movement/aim and text input.
+        // GoLauncher only exposes INV in gameplay and BACK in menus.
+        // The Android keyboard is requested automatically by the bridge.
         mControlLayout.setNamedControlVisible("INV", inGame);
         mControlLayout.setNamedControlVisible("BACK", !inGame);
-        mControlLayout.setNamedControlVisible("Keyboard",
-                !inGame && mTouchControllerKeyboardVisible);
     }
 
     /** Called by the utility controls/GameView when the inventory is opened or closed. */
